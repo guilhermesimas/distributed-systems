@@ -18,6 +18,10 @@ local client = server:accept()
 
 print "Client connected"
 
-client:send("Hello client")
+while 1 do
+	local message = client:receive("*l")
+	print(message)
+	client:send(io.read("l").."\n")
+end
 
 client:shutdown("both")
