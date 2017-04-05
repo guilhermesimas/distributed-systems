@@ -15,11 +15,17 @@ print "Please specify Port"
 
 local port = io.read("n")
 
--- gettin TCP connection, with local host IP address and to any port (0)
-local server = assert(socket.connect("0.0.0.0",port))
 
-while 1 do
+for i=1,10 do
+	-- gettin TCP connection, with local host IP address and to any port (0)
+	print("#"..i.."\n")
+	local server = assert(socket.connect("0.0.0.0",port))
 	server:send("Give me a string".."\n")
-	local message = server:receive("*l")
-	print(message)
+	local message = server:receive(1024)
+	server:close()
 end
+local server = assert(socket.connect("0.0.0.0",port))
+server:send("quit\n")
+server:close()
+print "Done"
+

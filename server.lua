@@ -14,15 +14,16 @@ local ip, port = server:getsockname()
 
 print("Local IP:" .. ip .. " Port:" .. port)
 
-print "Client connected"
-
-local file = assert(io.open("lyrics.txt","r"))
+local file = assert(io.open("./lyrics.txt","r"))
 local string = file:read(1024);
-
+local client
 while 1 do
-	local client = server:accept()
+	client = server:accept()
 	local message = client:receive("*l")
-	print(message)
-	client:send(io.read("l").."\n")
+	if message=="quit" then
+		break
+	end
+	client:send(string)
 	client:close()
 end
+client:close()
