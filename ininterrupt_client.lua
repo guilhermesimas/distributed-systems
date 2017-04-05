@@ -17,9 +17,21 @@ local port = io.read("n")
 
 -- gettin TCP connection, with local host IP address and to any port (0)
 local server = assert(socket.connect("0.0.0.0",port))
+local t_init = socket.gettime()
 
-while 1 do
-	server:send(io.read("l").."\n")
-	local message = server:receive("*l")
-	print(message)
+for i=1,200 do
+	--local request = io.read("l").."\n"
+	server:send("download\n")
+	-- if request =="quit\n" then
+	-- 	break;
+	-- end
+	local message = server:receive(1024)
+	print("received")
 end
+
+server:send("quit\n")
+
+local t_end = socket.gettime()
+
+print("Total client ininterrupted time was " .. t_end-t_init .. "seconds \n")
+server:close()

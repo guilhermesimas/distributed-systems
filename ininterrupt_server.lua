@@ -14,14 +14,23 @@ local ip, port = server:getsockname()
 
 print("Local IP:" .. ip .. " Port:" .. port)
 
-local client = server:accept()
+local file = assert(io.open("lyrics.txt","r"))
+local string = file:read(1024);
 
+local client = server:accept()
+local t_init = socket.gettime()
 print "Client connected"
+
 
 while 1 do
 	local message = client:receive("*l")
-	print(message)
-	client:send(io.read("l").."\n")
+	if message == "quit" then
+		break;
+	end
+	client:send(string)
 end
 
-client:shutdown("both")
+local t_end = socket.gettime()
+
+print("Total server ininterrupted time was " .. t_end-t_init .. "seconds \n")
+client:close()
