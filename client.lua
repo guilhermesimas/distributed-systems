@@ -19,7 +19,7 @@ local port = io.read("n")
 local server = assert(socket.connect("0.0.0.0",port))
 
 while 1 do
-	server:send(io.read("l").."\n")
+	server:send("Give me a string".."\n")
 	local message = server:receive("*l")
 	print(message)
 end
