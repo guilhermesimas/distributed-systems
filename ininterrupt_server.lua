@@ -12,10 +12,7 @@ local server = assert(socket.bind("*",0))
 
 local ip, port = server:getsockname()
 
-print("Local IP:" .. ip .. " Port:" .. port)
-local file_port = assert(io.open("port.txt","w"))
-file_port:write(port)
-file_port:close()
+print(port)
 
 local file = assert(io.open("lyrics.txt","r"))
 local string = file:read(1024)

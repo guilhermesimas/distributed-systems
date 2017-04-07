@@ -7,21 +7,11 @@
 -- loading namespace
 local socket = require("socket")
 
-print "Please specify IP:"
-
---local ip = io.read("l")
-
-print "Please specify Port"
-
-local file = assert(io.open("port.txt","r"))
-local port = file:read(5)
-file:close()
-
 -- gettin TCP connection, with local host IP address and to any port (0)
-local server = assert(socket.connect("0.0.0.0",port))
+local server = assert(socket.connect("0.0.0.0",arg[1]))
 local t_init = socket.gettime()
 
-for i=1,args[0] do
+for i=1,arg[2] do
 	--local request = io.read("l").."\n"
 	server:send("download\n")
 	-- if request =="quit\n" then
@@ -29,8 +19,6 @@ for i=1,args[0] do
 	-- end
 	local message = server:receive(1024)
 end
-
-server:send("quit\n")
 
 local t_end = socket.gettime()
 

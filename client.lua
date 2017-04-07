@@ -19,10 +19,11 @@ local t_init = socket.gettime()
 for i=1,arg[2] do
 	-- gettin TCP connection, with local host IP address and to any port (0)
 	-- print("#"..i.."\n")
-	local server = assert(socket.connect("0.0.0.0",port))
+	local server = assert(socket.connect("*",port))
 	assert(server:setoption('tcp-nodelay',true))
 	server:send("Give me a string".."\n")
 	local message = server:receive(1024)
+	server:shutdown()
 	server:close()
 end
 local t_end = socket.gettime()
