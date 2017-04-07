@@ -17,6 +17,7 @@ print("Local IP:" .. ip .. " Port:" .. port)
 local file = assert(io.open("./lyrics.txt","r"))
 local string = file:read(1024);
 local client
+local t_init = socket.gettime()
 while 1 do
 	client = server:accept()
 	local message = client:receive("*l")
@@ -27,3 +28,5 @@ while 1 do
 	client:close()
 end
 client:close()
+local t_end = socket.gettime()
+print("Total server running time was <"..t_end - t_init .. ">s")

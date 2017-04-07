@@ -15,10 +15,10 @@ print "Please specify Port"
 
 local port = io.read("n")
 
-
-for i=1,10 do
+local t_init = socket.gettime()
+for i=1,arg[1] do
 	-- gettin TCP connection, with local host IP address and to any port (0)
-	print("#"..i.."\n")
+	-- print("#"..i.."\n")
 	local server = assert(socket.connect("0.0.0.0",port))
 	server:send("Give me a string".."\n")
 	local message = server:receive(1024)
@@ -27,5 +27,5 @@ end
 local server = assert(socket.connect("0.0.0.0",port))
 server:send("quit\n")
 server:close()
-print "Done"
-
+local t_end = socket.gettime()
+print("Total client running time was <"..t_end - t_init .. ">s")
