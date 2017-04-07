@@ -13,20 +13,21 @@ print "Please specify IP:"
 
 print "Please specify Port"
 
-local port = io.read("n")
+local file = assert(io.open("port.txt","r"))
+local port = file:read(5)
+file:close()
 
 -- gettin TCP connection, with local host IP address and to any port (0)
 local server = assert(socket.connect("0.0.0.0",port))
 local t_init = socket.gettime()
 
-for i=1,200 do
+for i=1,args[0] do
 	--local request = io.read("l").."\n"
 	server:send("download\n")
 	-- if request =="quit\n" then
 	-- 	break;
 	-- end
 	local message = server:receive(1024)
-	print("received")
 end
 
 server:send("quit\n")
