@@ -1,6 +1,7 @@
 -- Lua script used for calling the client and servers for different numbers of
 -- requisitons and log the data
 
+local socket = require("socket")
 print("============INTERRUPTED SCRIPT===============")
 
 -- starts server
@@ -18,12 +19,9 @@ while n<=10000000 do
 	n=n*10
 end
 
-local socket = require("socket")
 local server_connection = assert(socket.connect("*",port))
-server_connection:settimeout(5)
 assert(server_connection:setoption('tcp-nodelay',true))
 server_connection:send("quit\n")
-server:shutdown()
 server_connection:close()
 
 print("============END SCRIPT===============")

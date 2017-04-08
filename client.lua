@@ -23,7 +23,6 @@ for i=1,arg[2] do
 	assert(server:setoption('tcp-nodelay',true))
 	server:send("Give me a string".."\n")
 	local message = server:receive(1024)
-	server:shutdown()
 	server:close()
 end
 local t_end = socket.gettime()
