@@ -9,20 +9,17 @@ local socket = require("socket")
 
 -- gettin TCP connection, with local host IP address and to any port (0)
 local server = assert(socket.bind("*",0))
-local ip, port = server:getsockname()
-print(port)
 -- assert(server:setoption('tcp-nodelay',true))
-server:settimeout(20)
+server:settimeout(5)
+local ip, port = server:getsockname()
+
+print(port)
 
 local file = assert(io.open("./lyrics.txt","r"))
 local string = file:read(1024);
 local client
 while 1 do
-	client = assert(server:accept())
-	if client==nil then
-		server:close()
-		return
-	end
+	client = server:accept()
 	local message = client:receive("*l")
 	if message == "quit" then
 		break
@@ -30,5 +27,5 @@ while 1 do
 	client:send(string)
 	client:close()
 end
-server:close()
 client:close()
+server:close()

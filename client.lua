@@ -26,6 +26,6 @@ for i=1,arg[2] do
 end
 local t_end = socket.gettime()
 print("Total client running time was <"..t_end - t_init .. ">s")
-local server = assert(socket.connect("0.0.0.0",port))
-server:send("quit\n")
-server:close()
+local server_connection = assert(socket.connect("0.0.0.0",port))
+server_connection:send("quit\n")
+server_connection:close()
