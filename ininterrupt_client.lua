@@ -25,5 +25,5 @@ local t_end = socket.gettime()
 
 server:send("quit\n")
 server:close()
-print("Total client ininterrupted time was " .. t_end-t_init .. "seconds \n")
+print("Total client running time was <"..t_end - t_init .. ">s")
 
