@@ -13,10 +13,12 @@ local socket = require("socket")
 
 --print "Please specify Port"
 
-local port = arg[1]
+local file_port = assert(io.open("port1.txt","r"))
+local port = file_port:read("*n")
+file_port:close()
 
 local t_init = socket.gettime()
-for i=1,arg[2] do
+for i=1,arg[1] do
 	-- gettin TCP connection, with local host IP address and to any port (0)
 	-- print("#"..i.."\n")
 	local server = assert(socket.connect("0.0.0.0",port))
