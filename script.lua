@@ -8,15 +8,18 @@ print("============INTERRUPTED SCRIPT===============")
 -- in case of failure from counter-part
 -- gets server output, which is the port number
 local n=1;
+local port
 while n<=10000000 do
 	print("---------BEGIN N="..n.."--------------")
-	local server = assert(io.popen("lua5.3 server.lua","r"))
+	assert(os.execute("lua5.3 server.lua>port.txt &"))
 	assert(os.execute("sleep 1"))
-	local port = server:read("n")
+	local port_file = io.open("port.txt","r")
+	port = port_file:read("n")
+	print("Using port "..port)
+	assert(os.execute("rm port.txt"))
 	-- executes client passing in params
 	assert(os.execute("lua5.3 client.lua "..port.." "..n))
 	assert(os.execute("sleep 1"))
-	server:close()
 	print("---------END N="..n.."--------------")
 	n=n*10
 end
