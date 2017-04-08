@@ -9,7 +9,7 @@ local socket = require("socket")
 
 -- gettin TCP connection, with local host IP address and to any port (0)
 local server = assert(socket.bind("*",0))
-assert(server:setoption('tcp-nodelay',true))
+-- assert(server:setoption('tcp-nodelay',true))
 server:settimeout(5)
 local ip, port = server:getsockname()
 
@@ -28,3 +28,4 @@ while 1 do
 	client:close()
 end
 client:close()
+server:close()

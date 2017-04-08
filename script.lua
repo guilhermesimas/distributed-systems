@@ -25,8 +25,7 @@ while n<=10000000 do
 end
 
 local socket = require("socket")
-local server_connection = assert(socket.connect("*",port))
-assert(server_connection:setoption('tcp-nodelay',true))
+local server_connection = assert(socket.connect("0.0.0.0",port))
 server_connection:send("quit\n")
 server_connection:close()
 
