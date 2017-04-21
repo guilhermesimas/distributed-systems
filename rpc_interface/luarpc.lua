@@ -1,4 +1,5 @@
 socket = require "socket"
+M = require "serialize"
 
 myobj1 = { foo = 
              function (a, b, s)
@@ -63,10 +64,24 @@ function createServant(obj, arq_interface) -- create new Service
 end
 
 function waitIncoming()
+
+	-- include all servers as observers
+	-- call select for list of ready to read 
+	-- receive message
+	-- unmarshall message
+	-- call function
+	-- marshall results
+	-- send message
 end
 
 function createProxy(ip,port,interface)
-	-- body
+
+	-- create client
+	-- create dynamic functions
+	-- marshall message
+	-- receive results
+	-- unmarshall
+	-- return 
 end
 
 
