@@ -1,0 +1,23 @@
+============INTERRUPTED SCRIPT===============
+---------BEGIN N=1--------------
+Total client running time was <0.00014305114746094>s
+---------END N=1--------------
+---------BEGIN N=10--------------
+Total client running time was <0.0007622241973877>s
+---------END N=10--------------
+---------BEGIN N=100--------------
+Total client running time was <0.0041429996490479>s
+---------END N=100--------------
+---------BEGIN N=1000--------------
+Total client running time was <0.04177713394165>s
+---------END N=1000--------------
+---------BEGIN N=10000--------------
+Total client running time was <0.40844917297363>s
+---------END N=10000--------------
+---------BEGIN N=100000--------------
+Total client running time was <4.0240678787231>s
+---------END N=100000--------------
+---------BEGIN N=1000000--------------
+Total client running time was <42.561969041824>s
+---------END N=1000000--------------
+---------BEGIN N=10000000--------------
