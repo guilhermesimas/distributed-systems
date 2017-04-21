@@ -24,7 +24,7 @@ end
 -- args: table with parameters
 -- ret : string in the form 'return{`name`={args}}
 function M.marshall_call(name, args)
-    return 'return{'..name..'='..M.marshall(args)..’}’
+    return 'return{'..name..'='..M.marshall(args)..'}'
 end
 
 -- in : string with encoded call
@@ -40,3 +40,5 @@ function M.marshall_ret(t)
 end
 
 function M.unmarshall_ret(s)
+    return M.unmarshall(s)
+end
