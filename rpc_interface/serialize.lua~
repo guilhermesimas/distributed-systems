@@ -1,8 +1,6 @@
 --- Serializa
 -- @param #table t table with parameters
 -- @return #string in the form '{parameter1, parameter2, ...}'
-M={}
-
 function M.marshall(t)
     local s = '{'
     for i,v in ipairs(t) do
@@ -44,5 +42,3 @@ end
 function M.unmarshall_ret(s)
     return M.unmarshall(s)
 end
-
-return M

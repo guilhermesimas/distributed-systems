@@ -37,28 +37,16 @@ function rpc.createServant(obj, arq_interface) -- create new Service
 	servant["functions"]=obj
 	globalObj = obj
 	servant["server"] = assert(socket.bind("*",0))
+	--servant= assert(socket.bind("*",0))
 	assert(servant["server"]:setoption('tcp-nodelay',true))
+	--assert(servant:setoption('tcp-nodelay',true))
+	servant["functions"]=obj
 	
-	for name,sig in pairs(interfaceTable["methods"]) do
-		args='('
-		for i,arg in ipairs(sig["args"]) do
-			if arg["type"]=='double' then
-				args=args..defaultNumber
-			elseif arg["type"]=='string' then
-				args=args..defaultString
-			end
-
-		if i ~= #sig["args"] then args = args..',' end
-
-		end
-		args=args..')'
-		print(load('return globalObj[\"'..name..'\"]'..args)())
-
-	end
 
 	table.insert(servants,servant)
 
 	return servant["server"]:getsockname()
+	--return servant:getsockname()
 
 end
 
