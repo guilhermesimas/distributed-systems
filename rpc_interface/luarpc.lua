@@ -117,7 +117,43 @@ end
 function rpc.createProxy(ip,port,interface)
 
 	-- create client
+	-- local server = assert(socket.connect(ip,port))
 	-- create dynamic functions
+	functions = {}
+	interfaceTable=load('return '..arq_interface)()
+	for name,sig in pairs(interfaceTable["methods"]) do
+		-- build params table
+		local params = {}
+		for i,param in ipairs(sig["args"]) do
+			if param["direction"]=="in" or param["direction"]=="inout" then
+				params[#params+1] = param
+				if param.type == "double" then
+					params[#params].type = "number"
+				end
+			end
+		end
+		functions[name] = function (...)
+			-- validate params
+			-- print(#params.." "..#({...}))
+			if #params > #({...}) then
+				print "INSUFICIENT PARAMS"
+			end
+			for i,param in ipairs(params) do
+					if type(({...})[i])~=param.type then
+						print "INCORRECT PARAMETERS"
+						print(type(({...})[i]).." != "..param.type)
+						return nil
+					end
+					-- extra parameters dont matter
+					if i>#param+1 then
+						break
+					end
+			end
+			print(M.marshall_call(name,{...}))
+		end
+	end
+	return functions
+	
 	-- marshall message
 	-- receive results
 	-- unmarshall

@@ -1,0 +1,6 @@
+local rpc = require("luarpc")
+arq_interface = assert(io.open("interface.lua"):read("*a"))
+local proxy = rpc.createProxy(0,0,arq_interface)
+proxy.foo(0.5,7)
+proxy.foo(0.5)
+proxy.foo("bla",0.5)
