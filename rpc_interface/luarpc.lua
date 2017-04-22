@@ -117,7 +117,7 @@ end
 function rpc.createProxy(ip,port,interface)
 
 	-- create client
-	-- local server = assert(socket.connect(ip,port))
+	connection = assert(socket.connect(ip,port))
 	-- create dynamic functions
 	functions = {}
 	interfaceTable=load('return '..arq_interface)()
@@ -150,6 +150,8 @@ function rpc.createProxy(ip,port,interface)
 					end
 			end
 			print(M.marshall_call(name,{...}))
+			connection:send(M.marshall_call(name,{...}).."\n")
+			return M.unmarshall_ret(connection:receive("*l"))
 		end
 	end
 	return functions
