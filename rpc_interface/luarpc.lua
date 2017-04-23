@@ -1,4 +1,4 @@
-drpc={}
+rpc={}
 socket = require "socket"
 M = require "serialize"
 

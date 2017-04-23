@@ -22,7 +22,6 @@ myobj2 = { foo =
 local file_port = io.open("port1.txt","w")
 arq_interface = assert(io.open("interface.lua"):read("*a"))
 
-createServant(myobj1,arq_interface)
 ip, port = rpc.createServant(myobj1,arq_interface)
 file_port:write(port..'\n')
 
@@ -34,4 +33,4 @@ file_port:write(port..'\n')
 
 file_port:close()
 
-waitIncoming()
+rpc.waitIncoming()
