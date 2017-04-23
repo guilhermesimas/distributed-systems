@@ -14,7 +14,9 @@ proxy = rpc.createProxy(ip,port,arq_interface)
 local t_init = socket.gettime()
 
 for i=0, 100, 1  do 
-	a= proxy.boo(i)
+	a,b= proxy.foo(i,i+1,i+2)
+	proxy.bar()
+	a = proxy.boo('hello')
 	-- print(a)
 end
 
