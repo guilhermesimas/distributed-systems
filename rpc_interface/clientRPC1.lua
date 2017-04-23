@@ -15,7 +15,7 @@ local t_init = socket.gettime()
 
 for i=0, 100, 1  do 
 	a= proxy.boo(i)
-	print(a)
+	-- print(a)
 end
 
 connection = assert(socket.connect(ip,port))
