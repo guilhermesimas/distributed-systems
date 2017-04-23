@@ -52,7 +52,7 @@ function rpc.createServant(obj, arq_interface) -- create new Service
 
 		end
 		args=args..')'
-		print(load('return globalObj[\"'..name..'\"]'..args)())
+		-- print(load('return globalObj[\"'..name..'\"]'..args)())
 
 	end
 
@@ -68,7 +68,7 @@ function rpc.waitIncoming()
 	local obs={}
 
 	for _,servant in ipairs(servants) do
-		print(servant)
+		-- print(servant)
 		-- table.insert(obs,servant.server:accept())
 		table.insert(obs,servant.server)
 	end 
@@ -153,9 +153,10 @@ function rpc.createProxy(ip,port,interface)
 					end
 			end
 			connection = assert(socket.connect(ip,port))
-			print(M.marshall_call(name,{...}))
+			-- print(M.marshall_call(name,{...}))
 			connection:send(M.marshall_call(name,{...}).."\n")
-			return M.unmarshall_ret(connection:receive("*l"))
+			ret_value = M.unmarshall_ret(connection:receive("*l"))
+			return table.unpack(ret_value)
 		end
 	end
 	return functions
