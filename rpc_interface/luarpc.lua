@@ -69,13 +69,16 @@ function rpc.waitIncoming()
 
 	for _,servant in ipairs(servants) do
 		print(servant)
-		table.insert(obs,servant.server:accept())
+		-- table.insert(obs,servant.server:accept())
+		table.insert(obs,servant.server)
 	end 
 	-- call select for list of ready to read 
 	while 1 do
 		local readyRead, readyWrite, err = socket.select(obs,{},1)
 		
-		for _,client in ipairs(readyRead) do
+		-- for _,client in ipairs(readyRead) do
+		for _,server in ipairs(readyRead) do
+			local client = server:accept()
 			local ip,port = client:getsockname()
 			-- receive message
 			local message, err = client:receive("*l")
@@ -107,7 +110,8 @@ function rpc.waitIncoming()
 				-- send message
 				client:send(message..'\n')
 			else
-			 print(err)
+			 -- print(err)
+				return
 			end
 		end
 	end
@@ -117,7 +121,6 @@ end
 function rpc.createProxy(ip,port,interface)
 
 	-- create client
-	connection = assert(socket.connect(ip,port))
 	-- create dynamic functions
 	functions = {}
 	interfaceTable=load('return '..arq_interface)()
@@ -149,17 +152,13 @@ function rpc.createProxy(ip,port,interface)
 						break
 					end
 			end
+			connection = assert(socket.connect(ip,port))
 			print(M.marshall_call(name,{...}))
 			connection:send(M.marshall_call(name,{...}).."\n")
 			return M.unmarshall_ret(connection:receive("*l"))
 		end
 	end
 	return functions
-	
-	-- marshall message
-	-- receive results
-	-- unmarshall
-	-- return 
 end
 
 

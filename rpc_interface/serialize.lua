@@ -19,7 +19,7 @@ end
 -- @param #string s encoded parameter list
 -- @return #string table as array with parameters in order
 function M.unmarshall(s)
-    return loadstring(s)()
+    return load(s)()
 end
 
 -- name: function name
