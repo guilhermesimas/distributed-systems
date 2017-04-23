@@ -1,25 +1,6 @@
-rpc={}
+drpc={}
 socket = require "socket"
 M = require "serialize"
-
-myobj1 = { foo = 
-             function (a, b, s)
-               return a+b, "alo alo"
-             end,
-          boo = 
-             function (n)
-               return n
-             end
-        }
-myobj2 = { foo = 
-             function (a, b, s)
-               return a-b, "tchau"
-             end,
-          boo = 
-             function (n)
-               return 1
-             end
-        }
 
 servants={}
 defaultNumber=1
@@ -68,21 +49,24 @@ function rpc.waitIncoming()
 	local obs={}
 
 	for _,servant in ipairs(servants) do
-		-- print(servant)
-		-- table.insert(obs,servant.server:accept())
 		table.insert(obs,servant.server)
 	end 
 	-- call select for list of ready to read 
 	while 1 do
 		local readyRead, readyWrite, err = socket.select(obs,{},1)
 		
-		-- for _,client in ipairs(readyRead) do
 		for _,server in ipairs(readyRead) do
 			local client = server:accept()
 			local ip,port = client:getsockname()
 			-- receive message
+
+
 			local message, err = client:receive("*l")
 			if(message) then
+
+				if(message=="QUIT") then
+					break
+				end
 				-- unmarshall message
 				local name, params = M.unmarshall_call(message)
 				-- call function
@@ -109,6 +93,7 @@ function rpc.waitIncoming()
 				message = M.marshall_ret(result)
 				-- send message
 				client:send(message..'\n')
+				client:close()
 			else
 			 -- print(err)
 				return
@@ -118,7 +103,7 @@ function rpc.waitIncoming()
 	
 end
 
-function rpc.createProxy(ip,port,interface)
+function rpc.createProxy(ip,port,arq_interface)
 
 	-- create client
 	-- create dynamic functions
@@ -156,13 +141,11 @@ function rpc.createProxy(ip,port,interface)
 			-- print(M.marshall_call(name,{...}))
 			connection:send(M.marshall_call(name,{...}).."\n")
 			ret_value = M.unmarshall_ret(connection:receive("*l"))
+			connection:close()
 			return table.unpack(ret_value)
 		end
 	end
 	return functions
 end
 
-
---arq_interface = assert(io.open("interface.lua"):read("*a"))
---createServant(myobj1,arq_interface)
 return rpc
