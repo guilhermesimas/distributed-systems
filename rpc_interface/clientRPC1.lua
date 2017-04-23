@@ -7,15 +7,15 @@ local file_port = assert(io.open("port1.txt","r"))
 local port = file_port:read("*n")
 file_port:close()
 
-ip=0.0.0.0
+ip="0.0.0.0"
 
-proxy = rpc.createproxy(ip,port,arq_interface)
+proxy = rpc.createProxy(ip,port,arq_interface)
 
 local t_init = socket.gettime()
 
 for i=0, 100, 1  do 
-	a = proxy:boo(i)
-	print(a)
+	a = proxy.boo(i)
+	-- print(a)
 end
 
 connection = assert(socket.connect(ip,port))
