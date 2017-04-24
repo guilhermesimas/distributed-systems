@@ -13,7 +13,7 @@ myobj1 = { foo =
              function (s)
              	--print (s)
              	--t = M.unmarshall('return'..s)
-             	return s[0]
+             	return 10
              end
         }
 

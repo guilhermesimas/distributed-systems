@@ -27,25 +27,45 @@ local t_init = socket.gettime()
 for i=0, 100, 1  do
 	n = i%10 
 	if n == 0 then
-		a = proxy1.boo(i)
+		a,b= proxy1.foo(i,i+1,i+2)
+		proxy1.bar()
+		a = proxy1.boo('hello')
 	elseif n == 1 then
-		a = proxy2.boo(i)
+		a,b= proxy2.foo(i,i+1,i+2)
+		proxy2.bar()
+		a = proxy2.boo('hello')
 	elseif n == 2 then
-		a = proxy3.boo(i)
+		a,b= proxy3.foo(i,i+1,i+2)
+		proxy3.bar()
+		a = proxy3.boo('hello')
 	elseif n == 3 then
-		a = proxy4.boo(i)
+		a,b= proxy4.foo(i,i+1,i+2)
+		proxy4.bar()
+		a = proxy4.boo('hello')
 	elseif n == 4 then
-		a = proxy5.boo(i)
+		a,b= proxy5.foo(i,i+1,i+2)
+		proxy5.bar()
+		a = proxy5.boo('hello')
 	elseif n == 5 then
-		a = proxy6.boo(i)
+		a,b= proxy6.foo(i,i+1,i+2)
+		proxy6.bar()
+		a = proxy6.boo('hello')
 	elseif n == 6 then
-		a = proxy7.boo(i)
+		a,b= proxy7.foo(i,i+1,i+2)
+		proxy7.bar()
+		a = proxy7.boo('hello')
 	elseif n == 7 then
-		a = proxy8.boo(i)
+		a,b= proxy8.foo(i,i+1,i+2)
+		proxy8.bar()
+		a = proxy8.boo('hello')
 	elseif n == 8 then
-		a = proxy9.boo(i)
+		a,b= proxy9.foo(i,i+1,i+2)
+		proxy9.bar()
+		a = proxy9.boo('hello')
 	else
-		a = proxy10.boo(i)
+		a,b= proxy10.foo(i,i+1,i+2)
+		proxy10.bar()
+		a = proxy10.boo('hello')
 	end
 	-- print(a)
 end
@@ -53,4 +73,5 @@ end
 connection = assert(socket.connect(ip,port1))
 local t_end = socket.gettime()
 
-print("Total time was: "..t_end-t_init)
+print(t_end-t_init)
+-- print("Total time was: "..t_end-t_init)

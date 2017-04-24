@@ -20,11 +20,17 @@ local t_init = socket.gettime()
 for i=0, 100, 1  do
 	n = i%3 
 	if n == 0 then
-		a = proxy1.boo(i)
+		a,b= proxy1.foo(i,i+1,i+2)
+		proxy1.bar()
+		a = proxy1.boo('hello')
 	elseif n == 1 then
-		a = proxy2.boo(i)
+		a,b= proxy2.foo(i,i+1,i+2)
+		proxy2.bar()
+		a = proxy2.boo('hello')
 	else
-		a = proxy3.boo(i)
+		a,b= proxy3.foo(i,i+1,i+2)
+		proxy3.bar()
+		a = proxy3.boo('hello')
 	end
 	-- print(a)
 end
@@ -32,4 +38,5 @@ end
 connection = assert(socket.connect(ip,port1))
 local t_end = socket.gettime()
 
-print("Total time was: "..t_end-t_init)
+print(t_end-t_init)
+-- print("Total time was: "..t_end-t_init)

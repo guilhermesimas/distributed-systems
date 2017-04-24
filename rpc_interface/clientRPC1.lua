@@ -23,4 +23,5 @@ end
 connection = assert(socket.connect(ip,port))
 local t_end = socket.gettime()
 
-print("Total time was: "..t_end-t_init)
+print(t_end-t_init)
+-- print("Total time was: "..t_end-t_init)
