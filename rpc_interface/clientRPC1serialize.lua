@@ -24,7 +24,7 @@ local avgSerializeTime = 0;
 for i=0, 100, 1  do
 	t_init_serialize = socket.gettime()
 	s = M.marshall(t)
-	print(s)
+	-- print(s)
 	t_end_serialize = socket.gettime()
 	avgSerializeTime= avgSerializeTime+t_end_serialize -t_init_serialize
 	a = proxy.boo(s)

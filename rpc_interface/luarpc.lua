@@ -37,9 +37,10 @@ function rpc.createServant(obj, arq_interface) -- create new Service
 
 	end
 
-	table.insert(servants,servant)
+	-- table.insert(servants,servant)
+	servants[servant.server] = servant
 
-	return servant["server"]:getsockname()
+	return servant.server:getsockname()
 
 end
 
@@ -57,10 +58,10 @@ function rpc.waitIncoming()
 		
 		for _,server in ipairs(readyRead) do
 			local client = server:accept()
-			local ip,port = client:getsockname()
+			-- local ip,port = client:getsockname()
 			-- receive message
 
-
+			print "Got here"
 			local message, err = client:receive("*l")
 			if(message) then
 
@@ -70,27 +71,33 @@ function rpc.waitIncoming()
 				-- unmarshall message
 				local name, params = M.unmarshall_call(message)
 				-- call function
-				args='('
-				for i,arg in ipairs(params) do
-					args=args..arg
-					if i ~= #params then args = args..',' end
+				-- args='('
+				-- for i,arg in ipairs(params) do
+				-- 	args=args..arg
+				-- 	if i ~= #params then args = args..',' end
 
+				-- end
+				-- args=args..')'
+				
+				-- for _,servant in pairs(servants) do
+				-- 	ipserver,portserver=servant.server:getsockname()
+				-- 	if port == portserver then--
+				-- 		globalClient = servant
+				-- 		break
+				-- 	end
+				-- end
+				globalClient = servants[server]
+				
+				-- result = {load('return globalClient[\"functions\"][\"'..name..'\"]'..args)()}
+				result = {pcall(servants[server][name],table.unpack(params))}
+				safe = table.remove(result,1)
+				if safe ~= true then
+					message = "___ERRORPC: Error on function call"
+				else 
+					-- marshall results
+					-- print(table.unpack(result))
+					message = M.marshall_ret(result)
 				end
-				args=args..')'
-				
-				for _,servant in pairs(servants) do
-					ipserver,portserver=servant.server:getsockname()
-					if port == portserver then--
-						globalClient = servant
-						break
-					end
-				end
-
-				
-				result = {load('return globalClient[\"functions\"][\"'..name..'\"]'..args)()}
-				
-				-- marshall results
-				message = M.marshall_ret(result)
 				-- send message
 				client:send(message..'\n')
 				client:close()
@@ -142,6 +149,9 @@ function rpc.createProxy(ip,port,arq_interface)
 			connection:send(M.marshall_call(name,{...}).."\n")
 			ret_value = M.unmarshall_ret(connection:receive("*l"))
 			connection:close()
+			if string.starts(ret_value,"___ERRORPC:") then
+				return ret_value
+			end
 			return table.unpack(ret_value)
 		end
 	end

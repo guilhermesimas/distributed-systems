@@ -27,18 +27,18 @@ myobj1 = { foo =
 --              end
 --         }
 
-local file_port = io.open("port1.txt","w")
+-- local file_port = io.open("port1.txt","w")
 arq_interface = assert(io.open("interface.lua"):read("*a"))
 
 ip, port = rpc.createServant(myobj1,arq_interface)
-file_port:write(port..'\n')
+-- file_port:write(port..'\n')
+print(ip.." "..port)
+-- ip, port = rpc.createServant(myobj1,arq_interface)
+-- file_port:write(port..'\n')
 
-ip, port = rpc.createServant(myobj1,arq_interface)
-file_port:write(port..'\n')
+-- ip, port = rpc.createServant(myobj1,arq_interface)
+-- file_port:write(port..'\n')
 
-ip, port = rpc.createServant(myobj1,arq_interface)
-file_port:write(port..'\n')
-
-file_port:close()
+-- file_port:close()/
 
 rpc.waitIncoming()

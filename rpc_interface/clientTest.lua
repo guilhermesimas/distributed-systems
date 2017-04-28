@@ -1,31 +1,19 @@
+rpc = require "luarpc"
 socket = require "socket"
-M = require "serialize"
-print "Please specify IP:"
 
---local ip = io.read("l")
+arq_interface = assert(io.open("interface.lua"):read("*a"))
 
-print "Please specify Port"
+-- local file_port = assert(io.open("port1.txt","r"))
+-- local port = file_port:read("*n")
+-- file_port:close()
+port = io.read()
 
-local port = io.read("*l")
+ip="0.0.0.0"
 
-function test()
-local server = assert(socket.connect("0.0.0.0",port))
+proxy = rpc.createProxy(ip,port,arq_interface)
 
-local message = M.marshall_call("foo", {1,2,'ola'})
+print "Got here"
 
-server:send(message..'\n')
+print(proxy.foo(1,2,3))
 
-message = server:receive("*l")
-print(message)
-local result = M.unmarshall_ret(message)
-
-print(result)
-
-server:close()
-return result
-end
-
-a,b=test()
-
-print(a)
-print(b)
+print(proxy.foo(1,2))
