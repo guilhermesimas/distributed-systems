@@ -33,10 +33,8 @@ function rpc.createServant(obj, arq_interface) -- create new Service
 
 		end
 		args=args..')'
-		-- print(load('return globalObj[\"'..name..'\"]'..args)())
 
 	end
-	-- table.insert(servants,servant)
 	servants[servant.server] = servant
 	return servant.server:getsockname()
 
@@ -56,49 +54,28 @@ function rpc.waitIncoming()
 		
 		for _,server in ipairs(readyRead) do
 			local client = server:accept()
-			-- local ip,port = client:getsockname()
 			-- receive message
-
 			local message, err = client:receive("*l")
 			if(message) then
-
 				if(message=="QUIT") then
 					break
 				end
 				-- unmarshall message
 				local name, params = M.unmarshall_call(message)
-				-- call function
-				-- args='('
-				-- for i,arg in ipairs(params) do
-				-- 	args=args..arg
-				-- 	if i ~= #params then args = args..',' end
-
-				-- end
-				-- args=args..')'
-				
-				-- for _,servant in pairs(servants) do
-				-- 	ipserver,portserver=servant.server:getsockname()
-				-- 	if port == portserver then--
-				-- 		globalClient = servant
-				-- 		break
-				-- 	end
-				-- end
-				globalClient = servants[server]
-				-- result = {load('return globalClient[\"functions\"][\"'..name..'\"]'..args)()}
+				-- call function in protected
 				result = {pcall(servants[server].functions[name],table.unpack(params))}
 				safe = table.remove(result,1)
 				if safe ~= true then
+					-- if error was thrown send error message
 					message = "___ERRORPC: Error on function call"
 				else 
 					-- marshall results
-					-- print(table.unpack(result))
 					message = M.marshall_ret(result)
 				end
 				-- send message
 				client:send(message..'\n')
 				client:close()
 			else
-			 -- print(err)
 				return
 			end
 		end
@@ -108,7 +85,6 @@ end
 
 function rpc.createProxy(ip,port,arq_interface)
 
-	-- create client
 	-- create dynamic functions
 	functions = {}
 	interfaceTable=load('return '..arq_interface)()
@@ -125,7 +101,6 @@ function rpc.createProxy(ip,port,arq_interface)
 		end
 		functions[name] = function (...)
 			-- validate params
-			-- print(#params.." "..#({...}))
 			if #params > #({...}) then
 				print "INSUFICIENT PARAMS"
 				return nil
@@ -142,7 +117,6 @@ function rpc.createProxy(ip,port,arq_interface)
 					end
 			end
 			connection = assert(socket.connect(ip,port))
-			-- print(M.marshall_call(name,{...}))
 			connection:send(M.marshall_call(name,{...}).."\n")
 			ret = connection:receive("*l")
 			connection:close()
