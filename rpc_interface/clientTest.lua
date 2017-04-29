@@ -7,12 +7,13 @@ arq_interface = assert(io.open("interface.lua"):read("*a"))
 -- local port = file_port:read("*n")
 -- file_port:close()
 port = io.read()
+-- print(port)
 
 ip="0.0.0.0"
 
 proxy = rpc.createProxy(ip,port,arq_interface)
 
-print "Got here"
+-- print "Got here"
 
 print(proxy.foo(1,2,3))
 

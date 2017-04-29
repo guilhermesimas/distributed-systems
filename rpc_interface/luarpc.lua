@@ -36,20 +36,18 @@ function rpc.createServant(obj, arq_interface) -- create new Service
 		-- print(load('return globalObj[\"'..name..'\"]'..args)())
 
 	end
-
 	-- table.insert(servants,servant)
 	servants[servant.server] = servant
-
 	return servant.server:getsockname()
 
 end
 
 function rpc.waitIncoming()
 
-	-- include all servers as observers 
+	-- include all servers as observers
 	local obs={}
 
-	for _,servant in ipairs(servants) do
+	for _,servant in pairs(servants) do
 		table.insert(obs,servant.server)
 	end 
 	-- call select for list of ready to read 
@@ -61,7 +59,6 @@ function rpc.waitIncoming()
 			-- local ip,port = client:getsockname()
 			-- receive message
 
-			print "Got here"
 			local message, err = client:receive("*l")
 			if(message) then
 
@@ -87,9 +84,8 @@ function rpc.waitIncoming()
 				-- 	end
 				-- end
 				globalClient = servants[server]
-				
 				-- result = {load('return globalClient[\"functions\"][\"'..name..'\"]'..args)()}
-				result = {pcall(servants[server][name],table.unpack(params))}
+				result = {pcall(servants[server].functions[name],table.unpack(params))}
 				safe = table.remove(result,1)
 				if safe ~= true then
 					message = "___ERRORPC: Error on function call"
@@ -132,6 +128,7 @@ function rpc.createProxy(ip,port,arq_interface)
 			-- print(#params.." "..#({...}))
 			if #params > #({...}) then
 				print "INSUFICIENT PARAMS"
+				return nil
 			end
 			for i,param in ipairs(params) do
 					if type(({...})[i])~=param.type then
@@ -147,15 +144,20 @@ function rpc.createProxy(ip,port,arq_interface)
 			connection = assert(socket.connect(ip,port))
 			-- print(M.marshall_call(name,{...}))
 			connection:send(M.marshall_call(name,{...}).."\n")
-			ret_value = M.unmarshall_ret(connection:receive("*l"))
+			ret = connection:receive("*l")
 			connection:close()
-			if string.starts(ret_value,"___ERRORPC:") then
-				return ret_value
+			if string.starts(ret,"___ERRORPC:") then
+				return ret
 			end
+			ret_value = M.unmarshall_ret(ret)
 			return table.unpack(ret_value)
 		end
 	end
 	return functions
+end
+
+function string.starts(String,Start)
+	return string.sub(String,1,string.len(Start))==Start
 end
 
 return rpc
