@@ -21,19 +21,18 @@ function rpc.createServant(obj, arq_interface) -- create new Service
 	assert(servant["server"]:setoption('tcp-nodelay',true))
 	
 	for name,sig in pairs(interfaceTable["methods"]) do
-		args='('
+		args={}
 		for i,arg in ipairs(sig["args"]) do
 			if arg["type"]=='double' then
-				args=args..defaultNumber
+				table.insert(args,defaultNumber)
 			elseif arg["type"]=='string' then
-				args=args..defaultString
+				table.insert(args,defaultString)
 			end
-
-		if i ~= #sig["args"] then args = args..',' end
-
 		end
-		args=args..')'
-
+		if pcall(obj[name],table.unpack(args)) ~= true then
+			print "OBJECT DOES NOT MATCH INTERFACE"
+			return nil
+		end
 	end
 	servants[servant.server] = servant
 	return servant.server:getsockname()

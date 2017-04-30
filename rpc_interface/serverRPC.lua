@@ -2,7 +2,7 @@ rpc = require "luarpc"
 M = require "serialize"
 
 myobj1 = { foo = 
-             function (a, b, c)
+             function (a, b, c, d)
                return a+b, a+c
              end,
            bar = 
