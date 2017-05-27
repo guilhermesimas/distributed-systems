@@ -1,0 +1,77 @@
+#include "/home/terra/TerraNG/terra/TerraNet.defs"
+
+var ushort nodeId = getNodeId();
+
+// Is this enough to support the messages passed in?
+pktype usrMsg from radioMsg with
+	var ubyte[4]  d8;
+	var ushort[4] d16;
+	var ulong[2]  d32;
+end
+
+// 5 types of messages:
+    // BROADCAST package with nodeId to be used in INITIALIZATION ROUTINE
+    
+    // EVENT AGENT - carries information that an event was detected
+
+    // INTEREST AGENT - carries information that a node has interest in event
+
+    // EVENT INFORMATION - carries the actual info on the event
+
+    // REQUEST - requests an event information
+
+// 3 "tables"
+    // NEIGHBOURS - nodeId of each neighbour (received in INITIALIZATION ROUTINE)
+    // EVENT - nodeId of neighbours that broadcasted event source notification.
+    // INTEREST - nodeId of neighbours that broadcasted interest in an event..
+// EVENT and INTEREST might not need to be tables since the number of events is small
+// and thus can be separate variables (EVENT_ORIGIN_XX and INTEREST_ORIGIN_XX where
+// XX can be LT for low temp and HT for high temp). In case optimzation is done (shortest
+// path) then theres also need for a third and fourth type of variable "N_JUMPS_ORIGIN_XX"
+// and N_JUMPS_INTEREST_XX which keeps track of the number of jumps till origin associated
+// with the neighbour in EVENT_ORIGIN_XX and INTEREST_ORIGIN_XX.
+
+// Identify all the neighbours:
+    // BROADCAST nodeId.
+    // Receive nodeIds for X ms
+        // Foreach nodeId received, add to table of neighbours
+
+
+// INITIALIZATION ROUTINE, for 1 sec will keep broadcasting its nodeId
+// to all the neighbours and will receive from neighbours their nodeId
+// and add them to a table if not there already.
+par/or do
+    await 1s
+with
+    var neighbour = RECEIVE()
+    if neighbour not in table then
+        add neighbour to table
+    end
+with
+    loop do
+        await 100ms
+        BROADCAST(nodeId)
+    end
+end
+
+par/and do
+    if nodeId = HARDCODED then
+        await 10s
+        emit TEMP_BAIXA //this will be a message blabla
+    end
+with
+    var agent = RECEIVE()
+    // So, here we treat the different type of events:
+
+        // EVENT AGENT - Updates the EVENT variables and forwards the message to a 
+        // random neighbour. Then, if there is a INTEREST
+        // registered, sends a REQUEST in the direction of the origin of EVENT.
+
+        // INTEREST AGENT - Updates the INTEREST variables and forwards the message to
+        // a random neighbour. Then, if there is an EVENT registered, sends a REQUEST in
+        // the direction of the origin of EVENT.
+
+        // EVENT INFORMATION - Forwards the message to the origin of INTEREST,if existant.
+
+        // REQUEST - Forwards the message to the origin of EVENT, if existant.
+end
