@@ -249,53 +249,53 @@ with
                 emit SEND(sendMessage);
             end
 
-        else/if message.type == EVENT_INTEREST_TMIN then
-            var ubyte flag = 0;
-            // CHECK IF NEIGHBOUR IS ALREADY INTERESTED. IF POSITIVE, THE MESSAGE IS IGNORED
-            loop i,n_table_interest_tmin do
-                if message.source == table_interest_tmin.neighbour[i] then
-                    flag = 1;
-                    break;
-                end
-            end
+        // else/if message.type == EVENT_INTEREST_TMIN then
+        //     var ubyte flag = 0;
+        //     // CHECK IF NEIGHBOUR IS ALREADY INTERESTED. IF POSITIVE, THE MESSAGE IS IGNORED
+        //     loop i,n_table_interest_tmin do
+        //         if message.source == table_interest_tmin.neighbour[i] then
+        //             flag = 1;
+        //             break;
+        //         end
+        //     end
 
-            // NEW INTEREST
-            if flag == 0 then
+        //     // NEW INTEREST
+        //     if flag == 0 then
 
-             // ADD NEIGHBOUR TO TABLE OF INTERESTS
-                table_interest_tmin.hops[n_table_interest_tmin] = message.hops;
-                table_interest_tmin.neighbour[n_table_interest_tmin] = message.source;
-                n_table_interest_tmin = n_table_interest_tmin +1;
+        //      // ADD NEIGHBOUR TO TABLE OF INTERESTS
+        //         table_interest_tmin.hops[n_table_interest_tmin] = message.hops;
+        //         table_interest_tmin.neighbour[n_table_interest_tmin] = message.source;
+        //         n_table_interest_tmin = n_table_interest_tmin +1;
 
-                // CHECK IF I ALREADY KNOW A SOURCE FOR THE EVENT
-                var eventMsg sendMessage;
+        //         // CHECK IF I ALREADY KNOW A SOURCE FOR THE EVENT
+        //         var eventMsg sendMessage;
 
-                if n_table_source_tmin > 0 then
-                    // HAS SOURCE FOR EVENT. REQUEST INFO
-                    sendMessage.source = nodeId;
-                    sendMessage.type = EVENT_REQUEST_TMIN;
-                    sendMessage.hops = 1;
-                    sendMessage.target = table_source_tmin.neighbour[0];
+        //         if n_table_source_tmin > 0 then
+        //             // HAS SOURCE FOR EVENT. REQUEST INFO
+        //             sendMessage.source = nodeId;
+        //             sendMessage.type = EVENT_REQUEST_TMIN;
+        //             sendMessage.hops = 1;
+        //             sendMessage.target = table_source_tmin.neighbour[0];
 
-                    emit SEND(sendMessage);
-                else
-                    // FORWARD INTEREST
-                    if message.hops < MAX_HOPS then
-                        sendMessage.source = nodeId;
-                        sendMessage.type = EVENT_INTEREST_TMIN;
-                        sendMessage.hops = message.hops+1;
-                        var ubyte index = (random() % nNeighbours);
-                        sendMessage.target = neighbours[index]; 
+        //             emit SEND(sendMessage);
+        //         else
+        //             // FORWARD INTEREST
+        //             if message.hops < MAX_HOPS then
+        //                 sendMessage.source = nodeId;
+        //                 sendMessage.type = EVENT_INTEREST_TMIN;
+        //                 sendMessage.hops = message.hops+1;
+        //                 var ubyte index = (random() % nNeighbours);
+        //                 sendMessage.target = neighbours[index]; 
 
-                        emit SEND(sendMessage);
-                    end
+        //                 emit SEND(sendMessage);
+        //             end
 
-                end
+        //         end
 
 
-            end
+        //     end
 
-        else/if message.type == EVENT_INTEREST_TMAX then
+        // else/if message.type == EVENT_INTEREST_TMAX then
 
             var ubyte flag = 0;
             // CHECK IF NEIGHBOUR IS ALREADY INTERESTED. IF POSITIVE, THE MESSAGE IS IGNORED
@@ -338,6 +338,7 @@ with
                     end
 
                 end
+            end
 
         else/if message.type == EVENT_REQUEST_TMIN then
 
@@ -427,7 +428,5 @@ with
         end
 
     end
-end
-
 end
 
