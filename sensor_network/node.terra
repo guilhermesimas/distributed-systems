@@ -53,13 +53,13 @@ var ubyte nNeighbours = 0;
 
 //Tables:
 
-regType eventMeta with
-    var ubyte origin;
-    var ulong hops;
-    var ubyte neighbour;
+regtype eventMetaTable with
+    var ubyte[N_NODES] origin;
+    var ulong[N_NODES] hops;
+    var ubyte[N_NODES] neighbour;
 end
 
-var eventMeta[N_NODES] table_interest_tmin;
+var eventMetaTable table_interest_tmin;
 var ubyte   n_table_interest_tmin;
 
 // Identify all the neighbours:
