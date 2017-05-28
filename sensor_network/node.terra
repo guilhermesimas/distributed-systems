@@ -28,8 +28,8 @@ end
 
 //neighbours
 
-ubyte[8] neighbours;
-ubyte nNeighbours = 0;
+var ubyte[8] neighbours;
+var ubyte nNeighbours = 0;
 
 
 // 5 types of messages:
@@ -64,44 +64,40 @@ ubyte nNeighbours = 0;
 // to all the neighbours and will receive from neighbours their nodeId
 // and add them to a table if not there already.
 par/or do
-    await 2s;
+    await 60s;
 with
-    var eventMetaMsg message = await RECEIVE;
-    if message.type == NEIGHBOUR_INFO then
-        var ubyte neighbour = message.source;
-        var ubyte flag = 0;
+	loop do
+		var eventMetaMsg message = await RECEIVE;
+		if message.type == NEIGHBOUR_INFO then
+		    var ubyte neighbour = message.source;
+		    var ubyte flag = 0;
 
-        var ubyte i = 0;
-        loop do
-            if i >= nNeighbours then
-                break;
-            end
+			loop i,nNeighbours do
+			    if neighbours[i] == neighbour then
+			        flag = 1;
+			        break;
+			    end
+			end
 
-            if neighbour[i] == neighbour then
-                flag = 1;
-                break;
-            end
+		    if flag == 0 then
+		        neighbours[nNeighbours]=neighbour;
+		        nNeighbours=nNeighbours+1;
+		        emit LEDS(nNeighbours); 
+		    end
 
-            i=i+1;
-        end
-
-        if flag == 0 then
-            neighbours[nNeighbours]=neighbour;
-            nNeighbours=nNeighbours+1;
-            emit LEDS(nNeighbours); 
-        end
-
-    end
+		end
+	end
 with
     loop do
         // EVERY 100ms, sends broadcast to all neighbours
-        await 100ms;
+        await 1s;
 		
         var eventMetaMsg neighbourmsg;
         neighbourmsg.type = NEIGHBOUR_INFO;
         neighbourmsg.source = nodeId;
         neighbourmsg.target = BROADCAST;
         emit SEND(neighbourmsg);
+		//emit LED2(TOGGLE);
         await SEND_DONE;
     end
 end
