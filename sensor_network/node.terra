@@ -2,15 +2,31 @@
 
 var ushort nodeId = getNodeId();
 
+// DIFFERENT MESSAGE TYPES
+#define NEIGHBOUR_INFO       1
+#define EVENT_SOURCE_TMIN    2
+#define EVENT_SOURCE_TMAX    3
+#define EVENT_INFO_TMIN      4
+#define EVENT_INFO_TMAX      5
+#define EVENT_INTEREST_TMIN  6
+#define EVENT_INTEREST_TMAX  7
+#define EVENT_REQUEST_TMIN   8
+#define EVENT_REQUEST_TMAX   9
+
 // Is this enough to support the messages passed in?
-pktype usrMsg from radioMsg with
-	var ubyte[4]  d8;
-	var ushort[4] d16;
-	var ulong[2]  d32;
+pktype eventMetaMsg from radioMsg with
+	var ulong  hops;
+    var ubyte  origin;
 end
 
+pktype eventInfoMsg from radioMsg with
+	var ulong temp;
+end
+
+
+
 // 5 types of messages:
-    // BROADCAST package with nodeId to be used in INITIALIZATION ROUTINE
+    // NEIGHBOURS package with nodeId to be used in INITIALIZATION ROUTINE
     
     // EVENT AGENT - carries information that an event was detected
 
@@ -41,37 +57,45 @@ end
 // to all the neighbours and will receive from neighbours their nodeId
 // and add them to a table if not there already.
 par/or do
-    await 1s
+    await 2s;
 with
-    var neighbour = RECEIVE()
-    if neighbour not in table then
-        add neighbour to table
+    var message = await RECEIVE;
+    if message.type == NEIGHBOUR_INFO then
+        var ubyte neighbour = message.source;
+        emit LED0(TOGGLE); 
     end
 with
     loop do
-        await 100ms
-        BROADCAST(nodeId)
+        // EVERY 100ms, sends broadcast to all neighbours
+        await 100ms;
+        var radioMsg neighbourmsg;
+        neighbourmsg.type = NEIGHBOUR_INFO;
+        neighbourmsg.source = nodeId;
+        neighbourmsg.target = BROADCAST;
+        emit SEND(neighbourmsg);
+        await SEND_DONE;
     end
 end
 
-par/and do
-    if nodeId = HARDCODED then
-        await 10s
-        emit TEMP_BAIXA //this will be a message blabla
-    end
-with
-    var agent = RECEIVE()
-    // So, here we treat the different type of events:
-
-        // EVENT AGENT - Updates the EVENT variables and forwards the message to a 
-        // random neighbour. Then, if there is a INTEREST
-        // registered, sends a REQUEST in the direction of the origin of EVENT.
-
-        // INTEREST AGENT - Updates the INTEREST variables and forwards the message to
-        // a random neighbour. Then, if there is an EVENT registered, sends a REQUEST in
-        // the direction of the origin of EVENT.
-
-        // EVENT INFORMATION - Forwards the message to the origin of INTEREST,if existant.
-
-        // REQUEST - Forwards the message to the origin of EVENT, if existant.
-end
+// par/and do
+//     if nodeId = HARDCODED then
+//         await 10s
+//         emit TEMP_BAIXA //this will be a message blabla
+//     end
+// with
+//     var agent = RECEIVE()
+//     // So, here we treat the different type of events:
+// 
+//         // EVENT AGENT - Updates the EVENT variables and forwards the message to a 
+//         // random neighbour. Then, if there is a INTEREST
+//         // registered, sends a REQUEST in the direction of the origin of EVENT.
+// 
+//         // INTEREST AGENT - Updates the INTEREST variables and forwards the message to
+//         // a random neighbour. Then, if there is an EVENT registered, sends a REQUEST in
+//         // the direction of the origin of EVENT.
+// 
+//         // EVENT INFORMATION - Forwards the message to the origin of INTEREST,if existant.
+// 
+//         // REQUEST - Forwards the message to the origin of EVENT, if existant.
+// end
+// 
