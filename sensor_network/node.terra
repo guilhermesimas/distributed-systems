@@ -1,5 +1,7 @@
 #include "/home/terra/TerraNG/terra/TerraNet.defs"
 
+#define N_NODES 16;
+
 var ushort nodeId = getNodeId();
 
 // DIFFERENT MESSAGE TYPES
