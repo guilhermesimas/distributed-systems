@@ -1,36 +1,4 @@
 #include "/home/terra/TerraNG/terra/TerraNet.defs"
-
-#define N_NODES 16;
-
-var ushort nodeId = getNodeId();
-
-// DIFFERENT MESSAGE TYPES
-#define NEIGHBOUR_INFO       1
-#define EVENT_SOURCE_TMIN    2
-#define EVENT_SOURCE_TMAX    3
-#define EVENT_INFO_TMIN      4
-#define EVENT_INFO_TMAX      5
-#define EVENT_INTEREST_TMIN  6
-#define EVENT_INTEREST_TMAX  7
-#define EVENT_REQUEST_TMIN   8
-#define EVENT_REQUEST_TMAX   9
-
-
-// Is this enough to support the messages passed in?
-pktype eventMsg from radioMsg with
-	var ulong  hops;
-    var ubyte  origin;
-	var ulong temp;
-end
-
-// tables
-
-//neighbours
-
-var ubyte[8] neighbours;
-var ubyte nNeighbours = 0;
-
-
 // 5 types of messages:
     // NEIGHBOURS package with nodeId to be used in INITIALIZATION ROUTINE
     
@@ -53,25 +21,65 @@ var ubyte nNeighbours = 0;
 // and N_JUMPS_INTEREST_XX which keeps track of the number of jumps till origin associated
 // with the neighbour in EVENT_ORIGIN_XX and INTEREST_ORIGIN_XX.
 
+#define N_NODES 8
+#define MAX_HOPS 4
+
+var ushort nodeId = getNodeId();
+
+// DIFFERENT MESSAGE TYPES
+#define NEIGHBOUR_INFO       1
+#define EVENT_SOURCE_TMIN    2
+#define EVENT_SOURCE_TMAX    3
+#define EVENT_INFO_TMIN      4
+#define EVENT_INFO_TMAX      5
+#define EVENT_INTEREST_TMIN  6
+#define EVENT_INTEREST_TMAX  7
+#define EVENT_REQUEST_TMIN   8
+#define EVENT_REQUEST_TMAX   9
+
+// DEBUG INFO
+#define SOURCE 1 
+
+
+// Is this enough to support the messages passed in?
+pktype eventMsg from radioMsg with
+	var ulong  hops;
+    var ubyte  origin;
+	var ulong temp;
+end
+
+//neighbours
+
+var ubyte[8] neighbours;
+var ubyte nNeighbours = 0;
+
+
+
 //Tables:
 
 regtype eventMetaTable with
-    var ubyte[16] origin;
-    var ulong[16] hops;
-    var ubyte[16] neighbour;
+    var ubyte[N_NODES] origin;
+    var ulong[N_NODES] hops;
+    var ubyte[N_NODES] neighbour;
 end
 
 var eventMetaTable table_interest_tmin;
-var ubyte   n_table_interest_tmin = 0;
+var ubyte n_table_interest_tmin = 0;
 
 var eventMetaTable table_interest_tmax;
-var ubyte   n_table_interest_tmax = 0;
+var ubyte n_table_interest_tmax = 0;
 
 var eventMetaTable table_source_tmin;
-var ubyte   n_table_source_tmin = 0;
+var ubyte n_table_source_tmin = 0;
 
 var eventMetaTable table_source_tmax;
-var ubyte   n_table_source_tmax = 0;
+var ubyte n_table_source_tmax = 0;
+
+// Event INFO
+var ubyte hasMaxTemp = 0;
+var ubyte hasMinTemp = 0;
+var long maxTemp;
+var long minTemp;
 
 // Identify all the neighbours:
     // BROADCAST nodeId.
@@ -123,11 +131,47 @@ end
 emit LEDS(OFF);
 
 par/and do
-   // if nodeId = HARDCODED then
-   //     await 10s
-   //     emit TEMP_BAIXA //this will be a message blabla
-   // end
-   await 1s;
+
+    loop do
+        emit REQ_TEMP();
+        var short currentTemp = await TEMP;
+
+        if currentTemp < 450 then
+            minTemp = currentTemp;
+            hasMinTemp = 1;
+
+            var eventMsg sendMessage;
+
+            if n_table_interest_tmin > 0 then
+
+                sendMessage.source = nodeId;
+                sendMessage.type = EVENT_INFO_TMIN;
+                sendMessage.hops = 1;
+                sendMessage.temp  = minTemp;
+
+                loop i, n_table_interest_tmin do
+                    sendMessage.target = message.source;
+
+                    emit SEND(sendMessage);
+                end
+
+            end
+
+            sendMessage.source = nodeId;
+            sendMessage.type = EVENT_SOURCE_TMIN;
+            sendMessage.hops = 1; 
+            var ubyte index = (random() % nNeighbours);
+            sendMessage.target = neighbours[index];
+
+            emit SEND(sendMessage);
+
+            LEDS(SOURCE);
+
+            await 100ms;
+
+            LEDS(OFF);
+        end
+    end
 with
     loop do
         var eventMsg message = await RECEIVE;
@@ -145,25 +189,241 @@ with
 
             // REQUEST - Forwards the message to the origin of EVENT, if existant.
         if message.type == EVENT_SOURCE_TMIN then
-			loop i,n_table_source_tmin do
-				if message.origin == table_source_tmin.[i] then
-					if message.hops < table_source_tmin
-				end
-			end
+
+            LEDS(SOURCE);
+
+            await 100ms;
+
+            LEDS(OFF);
+
+            // just for test
+            if n_table_source_tmin > 0 then
+                // CHECK IF NEW SOURCE IS CLOSER
+                if table_source_tmin.hops[0] > message.hops then
+                    table_source_tmin.hops[0] = message.hops;
+                    table_source_tmin.neighbour[0] = message.source;
+                end
+            else
+                table_source_tmin.hops[0] = message.hops;
+                table_source_tmin.neighbour[0] = message.source;
+                n_table_interest_tmin = n_table_interest_tmin + 1;
+            end
+
+            // FORWARD SOURCE
+
+            if message.hops < MAX_HOPS then
+                var eventMsg sendMessage;
+                sendMessage.source = nodeId;
+                sendMessage.type = EVENT_SOURCE_TMIN;
+                sendMessage.hops = message.hops+1;
+                sendMessage.target = random();
+
+                 emit SEND(sendMessage);
+            end
+
         else/if message.type == EVENT_SOURCE_TMAX then
 
+             // just for test
+            if n_table_source_tmax > 0 then
+                // CHECK IF NEW SOURCE IS CLOSER
+                if table_source_tmax.hops[0] > message.hops then
+                    table_source_tmax.hops[0] = message.hops;
+                    table_source_tmax.neighbour[0] = message.source;
+                end
+            else
+                table_source_tmax.hops[0] = message.hops;
+                table_source_tmax.neighbour[0] = message.source;
+                n_table_interest_tmax = n_table_interest_tmax + 1;
+            end
+
+            // FORWARD SOURCE
+
+            if message.hops < MAX_HOPS then
+                var eventMsg sendMessage;
+                sendMessage.source = nodeId;
+                sendMessage.type = EVENT_SOURCE_TMAX;
+                sendMessage.hops = message.hops+1;
+                var ubyte index = (random() % nNeighbours);
+                sendMessage.target = neighbours[index]; 
+
+                emit SEND(sendMessage);
+            end
+
         else/if message.type == EVENT_INTEREST_TMIN then
+            var flag = 0;
+            // CHECK IF NEIGHBOUR IS ALREADY INTERESTED. IF POSITIVE, THE MESSAGE IS IGNORED
+            loop i,n_table_interest_tmin do
+                if message.source == table_interest_tmin.neighbour[i] then
+                    flag = 1;
+                    break;
+                end
+            end
+
+            // NEW INTEREST
+            if flag == 0 then
+
+             // ADD NEIGHBOUR TO TABLE OF INTERESTS
+                table_interest_tmin.hops[n_table_interest_tmin] = message.hops;
+                table_interest_tmin.neighbour[n_table_interest_tmin] = message.source;
+                n_table_interest_tmin = n_table_interest_tmin +1;
+
+                // CHECK IF I ALREADY KNOW A SOURCE FOR THE EVENT
+                var eventMsg sendMessage;
+
+                if n_table_source_tmin > 0 then
+                    // HAS SOURCE FOR EVENT. REQUEST INFO
+                    sendMessage.source = nodeId;
+                    sendMessage.type = EVENT_REQUEST_TMIN;
+                    sendMessage.hops = 1;
+                    sendMessage.target = n_table_source_tmin.neighbourmsg[0];
+
+                    emit SEND(sendMessage);
+                else
+                    // FORWARD INTEREST
+                    if message.hops < MAX_HOPS then
+                        sendMessage.source = nodeId;
+                        sendMessage.type = EVENT_INTEREST_TMIN;
+                        sendMessage.hops = message.hops+1;
+                        var ubyte index = (random() % nNeighbours);
+                        sendMessage.target = neighbours[index]; 
+
+                        emit SEND(sendMessage);
+                    end
+
+                end
+
+
+            end
 
         else/if message.type == EVENT_INTEREST_TMAX then
 
+            var flag = 0;
+            // CHECK IF NEIGHBOUR IS ALREADY INTERESTED. IF POSITIVE, THE MESSAGE IS IGNORED
+            loop i,n_table_interest_tmax do
+                if message.source == table_interest_tmax.neighbour[i] then
+                    flag = 1;
+                    break;
+                end
+            end
+
+            // NEW INTEREST
+            if flag == 0 then
+
+             // ADD NEIGHBOUR TO TABLE OF INTERESTS
+                table_interest_tmax.hops[n_table_interest_tmax] = message.hops;
+                table_interest_tmax.neighbour[n_table_interest_tmax] = message.source;
+                n_table_interest_tmax = n_table_interest_tmax +1;
+
+                // CHECK IF I ALREADY KNOW A SOURCE FOR THE EVENT
+                // for now, multiple sources are not being treated makes sense to have a table for events?? or only the nearest source??
+                var eventMsg sendMessage;
+                if n_table_source_tmax > 0 then
+                    // HAS SOURCE FOR EVENT. REQUEST INFO
+                    sendMessage.source = nodeId;
+                    sendMessage.type = EVENT_REQUEST_TMAX;
+                    sendMessage.hops = 1;
+                    sendMessage.target = table_interest_tmax.neighbour[0];
+
+                    emit SEND(sendMessage);
+                else
+                    // FORWARD INTEREST
+                    if message.hops < MAX_HOPS then
+                        sendMessage.source = nodeId;
+                        sendMessage.type = EVENT_INTEREST_TMAX;
+                        sendMessage.hops = message.hops+1;
+                        var ubyte index = (random() % nNeighbours);
+                        sendMessage.target = neighbours[index]; 
+
+                        emit SEND(sendMessage);
+                    end
+
+                end
+
         else/if message.type == EVENT_REQUEST_TMIN then
+
+            var eventMsg sendMessage;
+            // CHECK IF SOURCE OF EVENT 
+            if hasMinTemp > 0 then 
+
+                sendMessage.source = nodeId;
+                sendMessage.type = EVENT_INFO_TMIN;
+                sendMessage.hops = 1; // has number of hops?
+                sendMessage.target = message.source;
+                sendMessage.temp  = minTemp;
+
+                emit SEND(sendMessage);
+
+
+            // CHECK IF REALLY HAS THE SOURCE
+            else/if n_table_interest_tmin > 0 then
+
+                sendMessage.source = nodeId;
+                sendMessage.type = EVENT_REQUEST_TMIN;
+                sendMessage.hops = message.hops+1; // has number of hops?
+                sendMessage.target = table_source_tmin.neighbour[0];
+
+                emit SEND(sendMessage);
+            else
+            end
 
         else/if message.type == EVENT_REQUEST_TMAX then
 
+         var eventMsg sendMessage;
+            // CHECK IF SOURCE OF EVENT 
+            if hasMaxTemp > 0 then 
+
+                sendMessage.source = nodeId;
+                sendMessage.type = EVENT_INFO_TMAX;
+                sendMessage.hops = 1; // has number of hops?
+                sendMessage.target = message.source;
+                sendMessage.temp  = maxTemp;
+
+                emit SEND(sendMessage);
+
+
+            // CHECK IF REALLY HAS THE SOURCE
+            else/if n_table_interest_tmax > 0 then
+
+                sendMessage.source = nodeId;
+                sendMessage.type = EVENT_REQUEST_TMAX;
+                sendMessage.hops = message.hops+1;
+                sendMessage.target = table_source_tmax.neighbour[0];
+
+                emit SEND(sendMessage);
+            else
+            end
+
         else/if message.type == EVENT_INFO_TMAX then
+
+            var eventMsg sendMessage;
+
+            loop i,n_table_interest_tmax do
+
+                sendMessage.source = nodeId;
+                sendMessage.type = EVENT_INFO_TMAX;
+                sendMessage.temp = message.temp;
+                sendMessage.hops = message.hops+1;
+                sendMessage.target = table_interest_tmax.neighbour[i];
+
+                emit SEND(sendMessage);
+
+            end
 
         else/if message.type == EVENT_INFO_TMIN then
 
+            var eventMsg sendMessage;
+
+            loop i,n_table_interest_tmax do
+
+                sendMessage.source = nodeId;
+                sendMessage.type = EVENT_INFO_TMIN;
+                sendMessage.temp = message.temp;
+                sendMessage.hops = message.hops+1;
+                sendMessage.target = table_interest_tmin.neighbour[i];
+
+                emit SEND(sendMessage);
+
+            end
         end
 
 
