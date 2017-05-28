@@ -59,7 +59,7 @@ end
 par/or do
     await 2s;
 with
-    var message = await RECEIVE;
+    var radioMsg message = await RECEIVE;
     if message.type == NEIGHBOUR_INFO then
         var ubyte neighbour = message.source;
         emit LED0(TOGGLE); 
