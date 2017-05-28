@@ -59,7 +59,7 @@ end
 par/or do
     await 2s;
 with
-    var radioMsg message = await RECEIVE;
+    var eventMetaMsg message = await RECEIVE;
     if message.type == NEIGHBOUR_INFO then
         var ubyte neighbour = message.source;
         emit LED0(TOGGLE); 
@@ -68,7 +68,8 @@ with
     loop do
         // EVERY 100ms, sends broadcast to all neighbours
         await 100ms;
-        var radioMsg neighbourmsg;
+		
+        var eventMetaMsg neighbourmsg;
         neighbourmsg.type = NEIGHBOUR_INFO;
         neighbourmsg.source = nodeId;
         neighbourmsg.target = BROADCAST;
