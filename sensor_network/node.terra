@@ -56,13 +56,22 @@ var ubyte nNeighbours = 0;
 //Tables:
 
 regtype eventMetaTable with
-    var ubyte[N_NODES] origin;
-    var ulong[N_NODES] hops;
-    var ubyte[N_NODES] neighbour;
+    var ubyte[16] origin;
+    var ulong[16] hops;
+    var ubyte[16] neighbour;
 end
 
 var eventMetaTable table_interest_tmin;
-var ubyte   n_table_interest_tmin;
+var ubyte   n_table_interest_tmin = 0;
+
+var eventMetaTable table_interest_tmax;
+var ubyte   n_table_interest_tmax = 0;
+
+var eventMetaTable table_source_tmin;
+var ubyte   n_table_source_tmin = 0;
+
+var eventMetaTable table_source_tmax;
+var ubyte   n_table_source_tmax = 0;
 
 // Identify all the neighbours:
     // BROADCAST nodeId.
@@ -136,7 +145,11 @@ with
 
             // REQUEST - Forwards the message to the origin of EVENT, if existant.
         if message.type == EVENT_SOURCE_TMIN then
-
+			loop i,n_table_source_tmin do
+				if message.origin == table_source_tmin.[i] then
+					if message.hops < table_source_tmin
+				end
+			end
         else/if message.type == EVENT_SOURCE_TMAX then
 
         else/if message.type == EVENT_INTEREST_TMIN then
