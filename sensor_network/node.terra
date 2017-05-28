@@ -13,6 +13,7 @@ var ushort nodeId = getNodeId();
 #define EVENT_REQUEST_TMIN   8
 #define EVENT_REQUEST_TMAX   9
 
+
 // Is this enough to support the messages passed in?
 pktype eventMetaMsg from radioMsg with
 	var ulong  hops;
@@ -23,6 +24,12 @@ pktype eventInfoMsg from radioMsg with
 	var ulong temp;
 end
 
+// tables
+
+//neighbours
+
+ubyte[8] neighbours;
+ubyte nNeighbours = 0;
 
 
 // 5 types of messages:
@@ -62,7 +69,28 @@ with
     var eventMetaMsg message = await RECEIVE;
     if message.type == NEIGHBOUR_INFO then
         var ubyte neighbour = message.source;
-        emit LED0(TOGGLE); 
+        var ubyte flag = 0;
+
+        var ubyte i = 0;
+        loop do
+            if i >= nNeighbours then
+                break;
+            end
+
+            if neighbour[i] == neighbour then
+                flag = 1;
+                break;
+            end
+
+            i=i+1;
+        end
+
+        if flag == 0 then
+            neighbours[nNeighbours]=neighbour;
+            nNeighbours=nNeighbours+1;
+            emit LEDS(nNeighbours); 
+        end
+
     end
 with
     loop do
