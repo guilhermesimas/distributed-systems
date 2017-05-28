@@ -150,7 +150,7 @@ par/and do
                 sendMessage.temp  = minTemp;
 
                 loop i, n_table_interest_tmin do
-                    sendMessage.target = message.source;
+                    sendMessage.target = table_interest_tmin.neighbour[i];
 
                     emit SEND(sendMessage);
                 end
@@ -165,11 +165,11 @@ par/and do
 
             emit SEND(sendMessage);
 
-            LEDS(SOURCE);
+            emit LEDS(SOURCE);
 
             await 100ms;
 
-            LEDS(OFF);
+            emit LEDS(OFF);
         end
     end
 with
@@ -190,11 +190,11 @@ with
             // REQUEST - Forwards the message to the origin of EVENT, if existant.
         if message.type == EVENT_SOURCE_TMIN then
 
-            LEDS(SOURCE);
+            emit LEDS(SOURCE);
 
             await 100ms;
 
-            LEDS(OFF);
+            emit LEDS(OFF);
 
             // just for test
             if n_table_source_tmin > 0 then
@@ -250,7 +250,7 @@ with
             end
 
         else/if message.type == EVENT_INTEREST_TMIN then
-            var flag = 0;
+            var ubyte flag = 0;
             // CHECK IF NEIGHBOUR IS ALREADY INTERESTED. IF POSITIVE, THE MESSAGE IS IGNORED
             loop i,n_table_interest_tmin do
                 if message.source == table_interest_tmin.neighbour[i] then
@@ -275,7 +275,7 @@ with
                     sendMessage.source = nodeId;
                     sendMessage.type = EVENT_REQUEST_TMIN;
                     sendMessage.hops = 1;
-                    sendMessage.target = n_table_source_tmin.neighbourmsg[0];
+                    sendMessage.target = table_source_tmin.neighbour[0];
 
                     emit SEND(sendMessage);
                 else
@@ -297,7 +297,7 @@ with
 
         else/if message.type == EVENT_INTEREST_TMAX then
 
-            var flag = 0;
+            var ubyte flag = 0;
             // CHECK IF NEIGHBOUR IS ALREADY INTERESTED. IF POSITIVE, THE MESSAGE IS IGNORED
             loop i,n_table_interest_tmax do
                 if message.source == table_interest_tmax.neighbour[i] then
@@ -426,7 +426,8 @@ with
             end
         end
 
-
     end
+end
+
 end
 
