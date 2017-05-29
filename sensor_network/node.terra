@@ -73,11 +73,11 @@ var ubyte n_table_interest_tmin = 0;
 var eventMetaTable table_interest_tmax;
 var ubyte n_table_interest_tmax = 0;
 
-var eventMetaTable table_source_tmin;
-var ubyte n_table_source_tmin = 0;
+var eventMetaTable table_source;
+var ubyte[2] n_table_source;
+n_table_source[MIN] = 0;
+n_table_source[MAX] = 0;
 
-var eventMetaTable table_source_tmax;
-var ubyte n_table_source_tmax = 0;
 
 // Event INFO
 var ubyte hasMaxTemp = 0;
@@ -150,36 +150,42 @@ with
     loop do
         var eventMsg sendMessage;
         var eventMsg message = await RECEIVE;
-        var ubyte type = message.type;
+        var ubyte type_raw = message.type;
+        var ubyte type = GET_TYPE(type_raw);
+        var ubyte min_max = GET_MIN_MAX(type_raw);
         var ubyte send = FALSE;
 
-        if GET_TYPE(type) == SOURCE then
-            emit LEDS(type);
-            // FORWARD SOURCE
-            if GET_MIN_MAX(type) == MIN then
-                if n_table_source_tmin > 0 then
-                    // CHECK IF NEW SOURCE IS CLOSER
-                    if table_source_tmin.hops[0] > message.hops then
-                        table_source_tmin.hops[0] = message.hops;
-                        table_source_tmin.neighbour[0] = message.source;
-                    end
-                else
-                    table_source_tmin.hops[0] = message.hops;
-                    table_source_tmin.neighbour[0] = message.source;
-                    n_table_interest_tmin = n_table_interest_tmin + 1;
-                end
+        if type == SOURCE then
+            emit LEDS(type_raw);
+            
+            if n_table_source[min_max] == 0 then
+                inc n_table_source[min_max];
+                n_table_source.hops[min_max] = message.hops;
+                n_table_source.neighbour[min_max] = message.source;
             else
+                if n_table_source.hops[min_max] > message.hops then
+                    n_table_source.hops[min_max] = message.hops;
+                    n_table_source.neighbour[min_max] = message.source;
+                end
+            end
 
             end
             if message.hops < MAX_HOPS then
-                var eventMsg sendMessage;
+                sendMessage.hops = message.hops+1;
                 sendMessage.source = nodeId;
                 sendMessage.type = type;
-                sendMessage.hops = message.hops+1;
 				var ubyte index = (random()%nNeighbours);
                 sendMessage.target = neighbours[index];
                 send = TRUE;
             end
+        else/if GET_TYPE(type) == INTEREST then
+           //initialization
+           if GET_MIN_MAX(type) == MIN then
+                //specific min
+           else
+                //specific max
+           end
+           //post
         end
 
 
