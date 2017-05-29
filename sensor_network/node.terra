@@ -41,9 +41,10 @@ var ushort nodeId = getNodeId();
 //Types are build as 2^(TYPE) + (MIN/MAX)
 // So SOURCE_MIN = 2 SOURCE_MAX = 3 INFO_MIN = 4 INFO_MAX = 5 etc
 
-#define TYPE(X,Y) ((0b1 << X) + Y)
+#define TYPE(X,Y) ((1 << X) + Y)
 #define GET_TYPE(X) (X / 2)
 #define GET_MIN_MAX(X) (X % 2)
+#define GET_T_INDEX(X,Y) (X*2) + Y
 
 
 
@@ -62,20 +63,17 @@ var ubyte nNeighbours = 0;
 //Tables:
 
 regtype eventMetaTable with
-    var ubyte[N_NODES] origin;
-    var ulong[N_NODES] hops;
-    var ubyte[N_NODES] neighbour;
+    var ubyte[4] origin;
+    var ulong[4] hops;
+    var ubyte[4] neighbour;
 end
 
-var eventMetaTable table_interest_tmin;
-var ubyte n_table_interest_tmin = 0;
-
-var eventMetaTable table_interest_tmax;
-var ubyte n_table_interest_tmax = 0;
+var eventMetaTable table;
+var ubyte[4] n_table = 0;
 
 var eventMetaTable table_source;
 var ubyte[2] n_table_source;
-n_table_source[MIN] = 0;
+n_table_source[] = 0;
 n_table_source[MAX] = 0;
 
 
@@ -84,6 +82,7 @@ var ubyte hasMaxTemp = 0;
 var ubyte hasMinTemp = 0;
 var long maxTemp;
 var long minTemp;
+
 
 // Identify all the neighbours:
     // BROADCAST nodeId.
@@ -112,7 +111,7 @@ with
 
 		    if flag == 0 then
 		        neighbours[nNeighbours]=neighbour;
-		        nNeighbours=nNeighbours+1;
+		        inc nNeighbours;
 		    end
 
 		end
@@ -130,21 +129,37 @@ with
     end
 end
 
+
 par/and do
 
     if nodeId == 22 then
-            
-        var eventMsg sendMessage;
-        sendMessage.source = nodeId;
-        sendMessage.type = TYPE(SOURCE,MIN);
-        sendMessage.hops = 1; 
-        var ubyte index = (random() % nNeighbours);
-        sendMessage.target = neighbours[index];
+       loop do     
+			await 50s;        	
+			var eventMsg sendMessage;
+        	sendMessage.source = nodeId;
+        	sendMessage.type = TYPE(SOURCE,MIN);
+        	sendMessage.hops = 1; 
+        	var ubyte index = (random() % nNeighbours);
+        	sendMessage.target = neighbours[index];
 
-        emit SEND(sendMessage);
-        emit LEDS(SOURCE);
-
+        	emit SEND(sendMessage);
+        	emit LEDS(TYPE(SOURCE,MIN));
+		end
     end
+	if nodeId == 44 then
+		loop do
+			await 40s;
+			var eventMsg sendMessage;
+        	sendMessage.source = nodeId;
+        	sendMessage.type = TYPE(INTEREST,MIN);
+        	sendMessage.hops = 1; 
+        	var ubyte index = (random() % nNeighbours);
+        	sendMessage.target = neighbours[index];
+
+        	emit SEND(sendMessage);
+        	emit LEDS(TYPE(INTEREST,MIN));
+		end
+	end
     
 with
     loop do
@@ -160,38 +175,31 @@ with
             
             if n_table_source[min_max] == 0 then
                 inc n_table_source[min_max];
-                n_table_source.hops[min_max] = message.hops;
-                n_table_source.neighbour[min_max] = message.source;
+                table_source.hops[min_max] = message.hops;
+                table_source.neighbour[min_max] = message.source;
             else
-                if n_table_source.hops[min_max] > message.hops then
-                    n_table_source.hops[min_max] = message.hops;
-                    n_table_source.neighbour[min_max] = message.source;
+                if table_source.hops[min_max] > message.hops then
+                    table_source.hops[min_max] = message.hops;
+                    table_source.neighbour[min_max] = message.source;
                 end
             end
 
-            end
             if message.hops < MAX_HOPS then
-                sendMessage.hops = message.hops+1;
+                sendMessage.hops = table_source.hops[min_max]+1;
                 sendMessage.source = nodeId;
-                sendMessage.type = type;
+                sendMessage.type = type_raw;
 				var ubyte index = (random()%nNeighbours);
                 sendMessage.target = neighbours[index];
-                send = TRUE;
+                emit SEND(sendMessage);
             end
-        else/if GET_TYPE(type) == INTEREST then
-           //initialization
-           if GET_MIN_MAX(type) == MIN then
-                //specific min
-           else
-                //specific max
-           end
-           //post
-        end
+        else/if type == INTEREST then
+            if n_table_interest[min_max] == 0 then
+				inc n_table_interest[min_max];
+				table_
+	        else
 
+			end
 
-        if send == TRUE then
-            emit SEND(sendMessage);
-            await SEND_DONE;
         end
     end
 end
