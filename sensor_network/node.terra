@@ -44,8 +44,6 @@ var ushort nodeId = getNodeId();
 #define TYPE(X,Y) ((1 << X) + Y)
 #define GET_TYPE(X) (X / 2)
 #define GET_MIN_MAX(X) (X % 2)
-#define GET_T_INDEX(X,Y) (((X-1)*2) + Y)
-
 
 
 // Is this enough to support the messages passed in?
@@ -62,15 +60,19 @@ var ubyte nNeighbours = 0;
 
 //Tables:
 
-regtype eventMetaTable with
-    var ubyte[4] origin;
-    var ulong[4] hops;
-    var ubyte[4] neighbour;
+regtype eventMetaTable with 
+    var ubyte[2] neighbour;
+    var ulong[2] hops;
 end
 
-var eventMetaTable table;
-var ubyte[4] n_table = 0;
+var ubyte[2] sourceFlag;
 
+regtype interestInfo with // type of queue elements
+    var ubyte source;
+    var ubyte type;
+end
+
+var eventMetaTable table; // armazenam sources
 
 
 // Event INFO
@@ -125,14 +127,15 @@ with
     end
 end
 
+var eventMsg sendMessage;
+sendMessage.source = nodeId;
 
 par/and do
 
     if nodeId == 22 then
-       loop do     
+       loop do
+
 			await 50s;        	
-			var eventMsg sendMessage;
-        	sendMessage.source = nodeId;
         	sendMessage.type = TYPE(SOURCE,MIN);
         	sendMessage.hops = 1; 
         	var ubyte index = (random() % nNeighbours);
@@ -145,8 +148,6 @@ par/and do
 	if nodeId == 44 then
 		loop do
 			await 40s;
-			var eventMsg sendMessage;
-        	sendMessage.source = nodeId;
         	sendMessage.type = TYPE(INTEREST,MIN);
         	sendMessage.hops = 1; 
         	var ubyte index = (random() % nNeighbours);
@@ -164,40 +165,45 @@ with
         var ubyte type_raw = message.type;
         var ubyte type = GET_TYPE(type_raw);
         var ubyte min_max = GET_MIN_MAX(type_raw);
-		var ubyte index = GET_T_INDEX(type,min_max);
-        var ubyte send = FALSE;
+        var ubyte send = TRUE;
+        sendMessage.type = type_raw;
+        var ubyte index_n = (random()%nNeighbours);
+        sendMessage.target = neighbours[index_n];
+        sendMessage.hops = table_source.hops[index]+1;
 
-        if type == SOURCE or type == INTEREST then
+        var interestInfo interest;
+        interest.type = type_raw;
+        interest.source = message.source;
+
+        if type == SOURCE then
             emit LEDS(type_raw);
             
-            if n_table_source[index] == 0 then
-                inc n_table_source[index];
-                table_source.hops[index] = message.hops;
-                table_source.neighbour[index] = message.source;
+            if sourceFlag[min_max] == 0 then
+                sourceFlag[min_max] = 1;
+                table_source.hops[min_max] = message.hops;
+                table_source.neighbour[min_max] = message.source;
             else
-                if table_source.hops[index] > message.hops then
-                    table_source.hops[index] = message.hops;
-                    table_source.neighbour[index] = message.source;
+                if table_source.hops[min_max] > message.hops then
+                    table_source.hops[min_max] = message.hops;
+                    table_source.neighbour[min_max] = message.source;
                 end
             end
 
-            if message.hops < MAX_HOPS then
-                sendMessage.hops = table_source.hops[index]+1;
-                sendMessage.source = nodeId;
-                sendMessage.type = type_raw;
-				var ubyte index_n = (random()%nNeighbours);
-                sendMessage.target = neighbours[index_n];
-                emit SEND(sendMessage);
+            if message.hops >= MAX_HOPS then
+                send = FALSE;
             end
         else/if type == INTEREST then
-            if n_table_interest[min_max] == 0 then
-				inc n_table_interest[min_max];
-				table_
-	        else
+            
+            
 
 			end
 
         end
+
+        if send == TRUE then
+            emit SEND(sendMessage);
+        end
+
     end
 end
 
