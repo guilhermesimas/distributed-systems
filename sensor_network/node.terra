@@ -28,17 +28,23 @@ var ushort nodeId = getNodeId();
 
 // DIFFERENT MESSAGE TYPES
 #define NEIGHBOUR_INFO       1
-#define EVENT_SOURCE_TMIN    2
-#define EVENT_SOURCE_TMAX    3
-#define EVENT_INFO_TMIN      4
-#define EVENT_INFO_TMAX      5
-#define EVENT_INTEREST_TMIN  6
-#define EVENT_INTEREST_TMAX  7
-#define EVENT_REQUEST_TMIN   8
-#define EVENT_REQUEST_TMAX   9
+
+#define MIN 0
+#define MAX 1
 
 // DEBUG INFO
-#define SOURCE 1 
+#define SOURCE 1
+#define INFO 2
+#define INTEREST 3
+#define REQUEST 4
+
+//Types are build as 2^(TYPE) + (MIN/MAX)
+// So SOURCE_MIN = 2 SOURCE_MAX = 3 INFO_MIN = 4 INFO_MAX = 5 etc
+
+#define TYPE(X,Y) ((0b1 << X) + Y)
+#define GET_TYPE(X) (X / 2)
+#define GET_MIN_MAX(X) (X % 2)
+
 
 
 // Is this enough to support the messages passed in?
@@ -52,8 +58,6 @@ end
 
 var ubyte[8] neighbours;
 var ubyte nNeighbours = 0;
-
-
 
 //Tables:
 
@@ -109,7 +113,6 @@ with
 		    if flag == 0 then
 		        neighbours[nNeighbours]=neighbour;
 		        nNeighbours=nNeighbours+1;
-		        emit LEDS(nNeighbours); 
 		    end
 
 		end
@@ -123,12 +126,9 @@ with
         neighbourmsg.source = nodeId;
         neighbourmsg.target = BROADCAST;
         emit SEND(neighbourmsg);
-		//emit LED2(TOGGLE);
         await SEND_DONE;
     end
 end
-
-emit LEDS(OFF);
 
 par/and do
 
@@ -136,7 +136,7 @@ par/and do
             
         var eventMsg sendMessage;
         sendMessage.source = nodeId;
-        sendMessage.type = EVENT_SOURCE_TMIN;
+        sendMessage.type = TYPE(SOURCE,MIN);
         sendMessage.hops = 1; 
         var ubyte index = (random() % nNeighbours);
         sendMessage.target = neighbours[index];
@@ -148,40 +148,45 @@ par/and do
     
 with
     loop do
+        var eventMsg sendMessage;
         var eventMsg message = await RECEIVE;
-        // So, here we treat the different type of events:
+        var ubyte type = message.type;
+        var ubyte send = FALSE;
 
-            // EVENT AGENT - Updates the EVENT variables and forwards the message to a 
-            // random neighbour. Then, if there is a INTEREST
-            // registered, sends a REQUEST in the direction of the origin of EVENT.
-
-            // INTEREST AGENT - Updates the INTEREST variables and forwards the message to
-            // a random neighbour. Then, if there is an EVENT registered, sends a REQUEST in
-            // the direction of the origin of EVENT.
-
-            // EVENT INFORMATION - Forwards the message to the origin of INTEREST,if existant.
-
-            // REQUEST - Forwards the message to the origin of EVENT, if existant.
-        if message.type == EVENT_SOURCE_TMIN then
-
-            emit LEDS(SOURCE);
-
-           
-
+        if GET_TYPE(type) == SOURCE then
+            emit LEDS(type);
             // FORWARD SOURCE
+            if GET_MIN_MAX(type) == MIN then
+                if n_table_source_tmin > 0 then
+                    // CHECK IF NEW SOURCE IS CLOSER
+                    if table_source_tmin.hops[0] > message.hops then
+                        table_source_tmin.hops[0] = message.hops;
+                        table_source_tmin.neighbour[0] = message.source;
+                    end
+                else
+                    table_source_tmin.hops[0] = message.hops;
+                    table_source_tmin.neighbour[0] = message.source;
+                    n_table_interest_tmin = n_table_interest_tmin + 1;
+                end
+            else
 
+            end
             if message.hops < MAX_HOPS then
                 var eventMsg sendMessage;
                 sendMessage.source = nodeId;
-                sendMessage.type = EVENT_SOURCE_TMIN;
+                sendMessage.type = type;
                 sendMessage.hops = message.hops+1;
 				var ubyte index = (random()%nNeighbours);
                 sendMessage.target = neighbours[index];
-                emit SEND(sendMessage);
+                send = TRUE;
             end
-
         end
 
+
+        if send == TRUE then
+            emit SEND(sendMessage);
+            await SEND_DONE;
+        end
     end
 end
 
