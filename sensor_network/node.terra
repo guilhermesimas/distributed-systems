@@ -44,7 +44,7 @@ var ushort nodeId = getNodeId();
 #define TYPE(X,Y) ((1 << X) + Y)
 #define GET_TYPE(X) (X / 2)
 #define GET_MIN_MAX(X) (X % 2)
-#define GET_T_INDEX(X,Y) (X*2) + Y
+#define GET_T_INDEX(X,Y) (((X-1)*2) + Y)
 
 
 
@@ -71,10 +71,6 @@ end
 var eventMetaTable table;
 var ubyte[4] n_table = 0;
 
-var eventMetaTable table_source;
-var ubyte[2] n_table_source;
-n_table_source[] = 0;
-n_table_source[MAX] = 0;
 
 
 // Event INFO
@@ -168,28 +164,29 @@ with
         var ubyte type_raw = message.type;
         var ubyte type = GET_TYPE(type_raw);
         var ubyte min_max = GET_MIN_MAX(type_raw);
+		var ubyte index = GET_T_INDEX(type,min_max);
         var ubyte send = FALSE;
 
-        if type == SOURCE then
+        if type == SOURCE or type == INTEREST then
             emit LEDS(type_raw);
             
-            if n_table_source[min_max] == 0 then
-                inc n_table_source[min_max];
-                table_source.hops[min_max] = message.hops;
-                table_source.neighbour[min_max] = message.source;
+            if n_table_source[index] == 0 then
+                inc n_table_source[index];
+                table_source.hops[index] = message.hops;
+                table_source.neighbour[index] = message.source;
             else
-                if table_source.hops[min_max] > message.hops then
-                    table_source.hops[min_max] = message.hops;
-                    table_source.neighbour[min_max] = message.source;
+                if table_source.hops[index] > message.hops then
+                    table_source.hops[index] = message.hops;
+                    table_source.neighbour[index] = message.source;
                 end
             end
 
             if message.hops < MAX_HOPS then
-                sendMessage.hops = table_source.hops[min_max]+1;
+                sendMessage.hops = table_source.hops[index]+1;
                 sendMessage.source = nodeId;
                 sendMessage.type = type_raw;
-				var ubyte index = (random()%nNeighbours);
-                sendMessage.target = neighbours[index];
+				var ubyte index_n = (random()%nNeighbours);
+                sendMessage.target = neighbours[index_n];
                 emit SEND(sendMessage);
             end
         else/if type == INTEREST then
