@@ -166,6 +166,18 @@ par/and do
 			await 40s;
 		end
 	end
+	if nodeId == 42 then
+		loop do
+
+        	sendMessage.type = TYPE(INTEREST,MAX);
+        	sendMessage.hops = 1; 
+        	var ubyte index = (random() % nNeighbours);
+        	sendMessage.target = neighbours[index];
+        	emit SEND(sendMessage);
+        	//emit LEDS(TYPE(INTEREST,MIN));
+			await 40s;
+		end
+	end
     
 with
     loop do
@@ -216,35 +228,42 @@ with
 			end
 			if hasTemp[min_max] then
 				// tem informacao, deve gerar informacao
-				emit LEDS(7);
+				
+				emit LEDS(OFF);
+				emit LEDS(6);
 
 				sendMessage.type = TYPE(INFO,min_max);
 				sendMessage.hops = 1;
 				sendMessage.temp = temp[min_max];
+				send = TRUE;
 				//await FOREVER;
 			end
-			emit LEDS(OFF);
-			emit LED0(ON);
 		else/if type == INFO then
-			emit LEDS(7);
-			await FOREVER;
+			emit LEDS(OFF);			
+			emit LEDS(3);
+			//await FOREVER;
 
-			//sendMessage.temp = message.temp;
-			//loop i,qSize() do
-			//	qGet(interest);
+			sendMessage.temp = message.temp;
+			if nodeId == 33 and message.temp == 10 then
+				emit LEDS(7);
+				await FOREVER;
+			end
+			loop i,qSize() do
+				emit LEDS(1);
+				qGet(interest);
 
-			//	if interest.type == min_max then
+				if interest.type == min_max then
 				// Se o interesse e a info forem do mesmo tipo, repassa a info
-					//sendMessage.target = interest.origin;
+					sendMessage.target = interest.source;
 
-					//emit SEND(sendMessage);
+					emit SEND(sendMessage);
 				else
 				// se forem de tipos diferentes, coloca o interesse na fila novamente
-					//qPut(interest);
-				//end
-
-				//waitingForInfo[min_max] = FALSE;
-			//end
+					qPut(interest);
+				end
+				interestFlag[min_max] = FALSE;
+				waitingForInfo[min_max] = FALSE;
+			end
         end        
 
 		if send == TRUE then
