@@ -65,12 +65,15 @@ regtype eventMetaTable with
     var ulong[2] hops;
 end
 
-var ubyte[2] sourceFlag;
-sourceFlag[MIN] = 0;
-sourceFlag[MAX] = 0;
-var ubyte[2] interestFlag;
-interestFlag[MIN] = 0;
-interestFlag[MAX] = 0;
+var ubyte[2] sourceFlag; // has source set
+sourceFlag[MIN] = FALSE;
+sourceFlag[MAX] = FALSE;
+var ubyte[2] interestFlag; // has interest set
+interestFlag[MIN] = FALSE;
+interestFlag[MAX] = FALSE;
+var ubyte[2] waitingForInfo;
+waitingForInfo[MIN] = FALSE;
+waitingForInfo[MAX] = FALSE;
 
 pktype interestInfo from radioMsg with // type of queuements
 end
@@ -79,10 +82,8 @@ var eventMetaTable table_source; // armazenam sources
 
 
 // Event INFO
-var ubyte hasMaxTemp = 0;
-var ubyte hasMinTemp = 0;
-var long maxTemp;
-var long minTemp;
+var ubyte[2] hasTemp;
+var long[2] temp;
 
 
 // Identify all the neighbours:
@@ -138,28 +139,29 @@ emit LEDS(OFF);
 par/and do
 
     if nodeId == 22 then
-       loop do
-
-			await 50s;        	
+       loop do			        	
         	sendMessage.type = TYPE(SOURCE,MIN);
         	sendMessage.hops = 1; 
         	var ubyte index = (random() % nNeighbours);
         	sendMessage.target = neighbours[index];
-
+			hasTemp[MIN] = TRUE;
+			table_source.hops[MIN] = 0;
+			table_source.neighbour[MIN] = nodeId;
         	emit SEND(sendMessage);
         	//emit LEDS(TYPE(SOURCE,MIN));
+			await 50s;
 		end
     end
 	if nodeId == 33 then
 		loop do
-			await 40s;
+
         	sendMessage.type = TYPE(INTEREST,MIN);
         	sendMessage.hops = 1; 
         	var ubyte index = (random() % nNeighbours);
         	sendMessage.target = neighbours[index];
-
         	emit SEND(sendMessage);
         	//emit LEDS(TYPE(INTEREST,MIN));
+			await 40s;
 		end
 	end
     
@@ -203,23 +205,33 @@ with
 		else/if type == REQUEST then
 			//emit LED0(ON);
 			// colocar na queue
+			qPut(interest);
 			// repassar
+			if waitingForInfo[min_max] == FALSE then
+				waitingForInfo[min_max] = TRUE;
+			else
+				send = FALSE;
+			end
+			if hasTemp[min_max] then
+				// tem informacao, deve gerar informacao
+				emit LEDS(7);
+				await FOREVER;
+			end
 			emit LEDS(OFF);
 			emit LED0(ON);
-			await FOREVER;
         end        
 
 		if send == TRUE then
             emit SEND(sendMessage);
         end
 
-		if sourceFlag[min_max] == TRUE and interestFlag[min_max] == TRUE then
+		if waitingForInfo[min_max] == FALSE and sourceFlag[min_max] == TRUE and interestFlag[min_max] == TRUE then
 			// dispara request
-			emit LEDS(7);
+			//emit LEDS(7);
 			sendMessage.type = TYPE(REQUEST,min_max);
 			sendMessage.target = table_source.neighbour[min_max];
 			sendMessage.hops = 1;
-
+			waitingForInfo[min_max] = TRUE;
 			emit SEND(sendMessage);
 		end
 
