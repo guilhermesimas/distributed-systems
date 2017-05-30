@@ -34,14 +34,14 @@ var ushort nodeId = getNodeId();
 
 // DEBUG INFO
 #define SOURCE 1
-#define INFO 2
-#define INTEREST 3
+#define INTEREST 2
+#define INFO 3
 #define REQUEST 4
 
 //Types are build as 2^(TYPE) + (MIN/MAX)
 // So SOURCE_MIN = 2 SOURCE_MAX = 3 INFO_MIN = 4 INFO_MAX = 5 etc
 
-#define TYPE(X,Y) ((1 << X) + Y)
+#define TYPE(X,Y) ((X * 2) + Y)
 #define GET_TYPE(X) (X / 2)
 #define GET_MIN_MAX(X) (X % 2)
 
@@ -66,13 +66,16 @@ regtype eventMetaTable with
 end
 
 var ubyte[2] sourceFlag;
+sourceFlag[MIN] = 0;
+sourceFlag[MAX] = 0;
+var ubyte[2] interestFlag;
+interestFlag[MIN] = 0;
+interestFlag[MAX] = 0;
 
-regtype interestInfo with // type of queue elements
-    var ubyte source;
-    var ubyte type;
+pktype interestInfo from radioMsg with // type of queuements
 end
 
-var eventMetaTable table; // armazenam sources
+var eventMetaTable table_source; // armazenam sources
 
 
 // Event INFO
@@ -130,6 +133,8 @@ end
 var eventMsg sendMessage;
 sendMessage.source = nodeId;
 
+emit LEDS(OFF);
+
 par/and do
 
     if nodeId == 22 then
@@ -142,10 +147,10 @@ par/and do
         	sendMessage.target = neighbours[index];
 
         	emit SEND(sendMessage);
-        	emit LEDS(TYPE(SOURCE,MIN));
+        	//emit LEDS(TYPE(SOURCE,MIN));
 		end
     end
-	if nodeId == 44 then
+	if nodeId == 33 then
 		loop do
 			await 40s;
         	sendMessage.type = TYPE(INTEREST,MIN);
@@ -154,13 +159,12 @@ par/and do
         	sendMessage.target = neighbours[index];
 
         	emit SEND(sendMessage);
-        	emit LEDS(TYPE(INTEREST,MIN));
+        	//emit LEDS(TYPE(INTEREST,MIN));
 		end
 	end
     
 with
     loop do
-        var eventMsg sendMessage;
         var eventMsg message = await RECEIVE;
         var ubyte type_raw = message.type;
         var ubyte type = GET_TYPE(type_raw);
@@ -169,15 +173,14 @@ with
         sendMessage.type = type_raw;
         var ubyte index_n = (random()%nNeighbours);
         sendMessage.target = neighbours[index_n];
-        sendMessage.hops = table_source.hops[index]+1;
+        sendMessage.hops = table_source.hops[min_max]+1;
 
         var interestInfo interest;
         interest.type = type_raw;
         interest.source = message.source;
 
+        //emit LEDS(type_raw);
         if type == SOURCE then
-            emit LEDS(type_raw);
-            
             if sourceFlag[min_max] == 0 then
                 sourceFlag[min_max] = 1;
                 table_source.hops[min_max] = message.hops;
@@ -193,16 +196,34 @@ with
                 send = FALSE;
             end
         else/if type == INTEREST then
-            
-            
+			qPut(interest);
 
-			end
+			interestFlag[min_max] = TRUE;
 
-        end
+		else/if type == REQUEST then
+			//emit LED0(ON);
+			// colocar na queue
+			// repassar
+			emit LEDS(OFF);
+			emit LED0(ON);
+			await FOREVER;
+        end        
 
-        if send == TRUE then
+		if send == TRUE then
             emit SEND(sendMessage);
         end
+
+		if sourceFlag[min_max] == TRUE and interestFlag[min_max] == TRUE then
+			// dispara request
+			emit LEDS(7);
+			sendMessage.type = TYPE(REQUEST,min_max);
+			sendMessage.target = table_source.neighbour[min_max];
+			sendMessage.hops = 1;
+
+			emit SEND(sendMessage);
+		end
+
+		//await 500ms;
 
     end
 end
