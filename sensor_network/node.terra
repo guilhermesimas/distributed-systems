@@ -147,6 +147,7 @@ par/and do
 			hasTemp[MIN] = TRUE;
 			table_source.hops[MIN] = 0;
 			table_source.neighbour[MIN] = nodeId;
+			sourceFlag[MIN] = TRUE;
         	emit SEND(sendMessage);
         	//emit LEDS(TYPE(SOURCE,MIN));
 			await 50s;
