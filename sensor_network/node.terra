@@ -142,48 +142,6 @@ emit LEDS(OFF);
 
 par/and do
 
-    if nodeId == 22 then
-       loop do			        	
-        	sendMessage.type = TYPE(SOURCE,MIN);
-        	sendMessage.hops = 1; 
-        	var ubyte index = (random() % nNeighbours);
-        	sendMessage.target = neighbours[index];
-			hasTemp[MIN] = TRUE;
-			temp[MIN] = 10; //fake temperature hard coded
-			table_source.hops[MIN] = 0;
-			table_source.neighbour[MIN] = nodeId;
-			sourceFlag[MIN] = TRUE;
-        	emit SEND(sendMessage);
-        	//emit LEDS(TYPE(SOURCE,MIN));
-			await 50s;
-		end
-    end
-	if nodeId == 33 then
-		loop do
-
-        	sendMessage.type = TYPE(INTEREST,MIN);
-        	sendMessage.hops = 1; 
-        	var ubyte index = (random() % nNeighbours);
-        	sendMessage.target = neighbours[index];
-        	emit SEND(sendMessage);
-        	//emit LEDS(TYPE(INTEREST,MIN));
-			await 40s;
-		end
-	end
-	if nodeId == 42 then
-		loop do
-
-        	sendMessage.type = TYPE(INTEREST,MAX);
-        	sendMessage.hops = 1; 
-        	var ubyte index = (random() % nNeighbours);
-        	sendMessage.target = neighbours[index];
-        	emit SEND(sendMessage);
-        	//emit LEDS(TYPE(INTEREST,MIN));
-			await 40s;
-		end
-	end
-    
-with
     loop do
         var eventMsg message = await RECEIVE;
         var ubyte type_raw = message.type;
@@ -253,7 +211,7 @@ with
 			//	await FOREVER;
 			//end
 
-			if selfInterestFlag[min_max]  // informação chegou no nó de origem da busca
+			if selfInterestFlag[min_max] then // informação chegou no nó de origem da busca
 				emit LEDS(7);
 				await FOREVER;
 			end
@@ -299,14 +257,14 @@ with
 
 		emit REQ_TEMP;
 
-		temp = await TEMP;
-		var trig = FALSE;
-		var minMaxType;
+		var ulong value = await TEMP;
+		var ubyte trig = FALSE;
+		var ubyte minMaxType;
 
-		if temp > 550 then
+		if value > 550 then
 			minMaxType = MAX;
 			trig = TRUE;
-		else/if temp < 450 then
+		else/if value < 450 then
 			minMaxType = MIN;
 			trig = TRUE;
 		end
@@ -317,7 +275,7 @@ with
         	var ubyte index = (random() % nNeighbours);
         	sendMessage.target = neighbours[index];
 			hasTemp[minMaxType] = TRUE;
-			temp[minMaxType] = temp;
+			temp[minMaxType] = value;
 			table_source.hops[minMaxType] = 0;
 			table_source.neighbour[minMaxType] = nodeId;
 			sourceFlag[minMaxType] = TRUE;
@@ -332,9 +290,9 @@ with
 	loop do
 		emit REQ_PHOTO;
 
-		photo = await PHOTO;
-		var trig = FALSE;
-		var minMaxType;
+		var ulong photo = await PHOTO;
+		var ubyte trig = FALSE;
+		var ubyte minMaxType;
 
 		if photo > 450 then		
 			minMaxType = MAX;
