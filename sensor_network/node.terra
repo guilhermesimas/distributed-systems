@@ -180,7 +180,7 @@ with
         sendMessage.hops = table_source.hops[min_max]+1;
 
         var interestInfo interest;
-        interest.type = type_raw;
+        interest.type = min_max;
         interest.source = message.source;
 
         //emit LEDS(type_raw);
@@ -229,10 +229,21 @@ with
 			emit LEDS(7);
 			await FOREVER;
 
+			//sendMessage.temp = message.temp;
 			//loop i,qSize() do
 			//	qGet(interest);
 
-			//	if interest.type == TYPE()
+			//	if interest.type == min_max then
+				// Se o interesse e a info forem do mesmo tipo, repassa a info
+					//sendMessage.target = interest.origin;
+
+					//emit SEND(sendMessage);
+				else
+				// se forem de tipos diferentes, coloca o interesse na fila novamente
+					//qPut(interest);
+				//end
+
+				//waitingForInfo[min_max] = FALSE;
 			//end
         end        
 
