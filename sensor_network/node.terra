@@ -145,6 +145,7 @@ par/and do
         	var ubyte index = (random() % nNeighbours);
         	sendMessage.target = neighbours[index];
 			hasTemp[MIN] = TRUE;
+			temp[MIN] = 10; //fake temperature hard coded
 			table_source.hops[MIN] = 0;
 			table_source.neighbour[MIN] = nodeId;
 			sourceFlag[MIN] = TRUE;
@@ -216,10 +217,23 @@ with
 			if hasTemp[min_max] then
 				// tem informacao, deve gerar informacao
 				emit LEDS(7);
-				await FOREVER;
+
+				sendMessage.type = TYPE(INFO,min_max);
+				sendMessage.hops = 1;
+				sendMessage.temp = temp[min_max];
+				//await FOREVER;
 			end
 			emit LEDS(OFF);
 			emit LED0(ON);
+		else/if type == INFO then
+			emit LEDS(7);
+			await FOREVER;
+
+			//loop i,qSize() do
+			//	qGet(interest);
+
+			//	if interest.type == TYPE()
+			//end
         end        
 
 		if send == TRUE then
