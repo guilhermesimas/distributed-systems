@@ -75,6 +75,10 @@ var ubyte[2] waitingForInfo;
 waitingForInfo[MIN] = FALSE;
 waitingForInfo[MAX] = FALSE;
 
+var ubyte[2] selfInterestFlag; // true if this node origined an interest;  
+selfInterestFlag[MIN] = FALSE;
+selfInterestFlag[MAX] = FALSE;
+
 pktype interestInfo from radioMsg with // type of queuements
 end
 
@@ -244,7 +248,12 @@ with
 			//await FOREVER;
 
 			sendMessage.temp = message.temp;
-			if nodeId == 33 and message.temp == 10 then
+			//if nodeId == 33 and message.temp == 10 then
+			//	emit LEDS(7);
+			//	await FOREVER;
+			//end
+
+			if selfInterestFlag[min_max]  // informação chegou no nó de origem da busca
 				emit LEDS(7);
 				await FOREVER;
 			end
@@ -283,5 +292,69 @@ with
 		//await 500ms;
 
     end
+
+with
+
+	loop do
+
+		emit REQ_TEMP;
+
+		temp = await TEMP;
+		var trig = FALSE;
+		var minMaxType;
+
+		if temp > 550 then
+			minMaxType = MAX;
+			trig = TRUE;
+		else/if temp < 450 then
+			minMaxType = MIN;
+			trig = TRUE;
+		end
+
+		if trig == TRUE then
+			sendMessage.type = TYPE(SOURCE,minMaxType);
+        	sendMessage.hops = 1; 
+        	var ubyte index = (random() % nNeighbours);
+        	sendMessage.target = neighbours[index];
+			hasTemp[minMaxType] = TRUE;
+			temp[minMaxType] = temp;
+			table_source.hops[minMaxType] = 0;
+			table_source.neighbour[minMaxType] = nodeId;
+			sourceFlag[minMaxType] = TRUE;
+        	emit SEND(sendMessage);
+			await 50s;
+		else
+			await 100ms;
+		end
+
+	end
+with
+	loop do
+		emit REQ_PHOTO;
+
+		photo = await PHOTO;
+		var trig = FALSE;
+		var minMaxType;
+
+		if photo > 450 then		
+			minMaxType = MAX;
+			trig = TRUE;
+		else/if photo < 350 then
+			minMaxType = MIN;
+			trig = TRUE;
+		end
+
+		if trig == TRUE then
+			selfInterestFlag[minMaxType] = TRUE;
+			sendMessage.type = TYPE(INTEREST,minMaxType);
+        	sendMessage.hops = 1; 
+        	var ubyte index = (random() % nNeighbours);
+        	sendMessage.target = neighbours[index];
+        	emit SEND(sendMessage);
+			await 50s;
+		else
+			await 100ms;
+		end
+	end
 end
 
