@@ -55,13 +55,13 @@ end
 
 //neighbours
 
-var ubyte[8] neighbours;
+var ushort[8] neighbours;
 var ubyte nNeighbours = 0;
 
 //Tables:
 
 regtype eventMetaTable with 
-    var ubyte[2] neighbour;
+    var ushort[2] neighbour;
     var ulong[2] hops;
 end
 
@@ -107,7 +107,7 @@ with
 	loop do
 		var eventMsg message = await RECEIVE;
 		if message.type == NEIGHBOUR_INFO then
-		    var ubyte neighbour = message.source;
+		    var ushort neighbour = message.source;
 		    var ubyte flag = 0;
 
 			loop i,nNeighbours do
@@ -151,7 +151,7 @@ par/and do
         var ubyte min_max = GET_MIN_MAX(type_raw);
         var ubyte send = TRUE;
         sendMessage.type = type_raw;
-        var ubyte index_n = (random()%nNeighbours);
+        var ushort index_n = (random()%nNeighbours);
         sendMessage.target = neighbours[index_n];
         sendMessage.hops = table_source.hops[min_max]+1;
 
@@ -170,11 +170,7 @@ par/and do
                     table_source.hops[min_max] = message.hops;
                     table_source.neighbour[min_max] = message.source;
                 end
-            end
-
-            if message.hops >= MAX_HOPS then
-                send = FALSE;
-            end
+            end            
         else/if type == INTEREST then
 			qPut(interest);
 
@@ -236,14 +232,17 @@ par/and do
 		else
 			send = FALSE;
         end        
-
+		if message.hops >= MAX_HOPS then
+            send = FALSE;
+        end
 		if send == TRUE then
+			emit LEDS(5);
             emit SEND(sendMessage);
         end
 
 		if waitingForInfo[min_max] == FALSE and sourceFlag[min_max] == TRUE and interestFlag[min_max] == TRUE then
 			// dispara request
-			//emit LEDS(7);
+			emit LEDS(7);
 			sendMessage.type = TYPE(REQUEST,min_max);
 			sendMessage.target = table_source.neighbour[min_max];
 			sendMessage.hops = 1;
@@ -258,7 +257,7 @@ par/and do
 with
 
 	loop do
-		
+		await 5s;
 		emit REQ_TEMP;
 
 		var ushort value = await TEMP;
@@ -277,7 +276,7 @@ with
 			emit LED0(ON);
 			sendMessage.type = TYPE(SOURCE,minMaxType);
         	sendMessage.hops = 1; 
-        	var ubyte index = (random() % nNeighbours);
+        	var ushort index = (random() % nNeighbours);
         	sendMessage.target = neighbours[index];
 			hasTemp[minMaxType] = TRUE;
 			temp[minMaxType] = value;
@@ -286,9 +285,6 @@ with
 			sourceFlag[minMaxType] = TRUE;
         	emit SEND(sendMessage);
 			await SEND_DONE;
-			await 50s;
-		else
-			await 100ms;
 		end
 
 		emit REQ_PHOTO;
@@ -309,13 +305,10 @@ with
 			selfInterestFlag[minMaxType] = TRUE;
 			sendMessage.type = TYPE(INTEREST,minMaxType);
         	sendMessage.hops = 1; 
-        	var ubyte index = (random() % nNeighbours);
+        	var ushort index = (random() % nNeighbours);
         	sendMessage.target = neighbours[index];
         	emit SEND(sendMessage);
 			await SEND_DONE;
-			await 50s;
-		else
-			await 100ms;
 		end
 
 	end
