@@ -50,7 +50,7 @@ var ushort nodeId = getNodeId();
 pktype eventMsg from radioMsg with
 	var ulong  hops;
     var ubyte  origin;
-	var ulong temp;
+	var ushort temp;
 end
 
 //neighbours
@@ -87,7 +87,9 @@ var eventMetaTable table_source; // armazenam sources
 
 // Event INFO
 var ubyte[2] hasTemp;
-var long[2] temp;
+hasTemp[MIN] = FALSE;
+hasTemp[MAX] = FALSE;
+var ushort[2] temp;
 
 
 // Identify all the neighbours:
@@ -157,7 +159,7 @@ par/and do
         interest.type = min_max;
         interest.source = message.source;
 
-        //emit LEDS(type_raw);
+        // emit LEDS(type_raw);
         if type == SOURCE then
             if sourceFlag[min_max] == 0 then
                 sourceFlag[min_max] = 1;
@@ -231,6 +233,8 @@ par/and do
 				interestFlag[min_max] = FALSE;
 				waitingForInfo[min_max] = FALSE;
 			end
+		else
+			send = FALSE;
         end        
 
 		if send == TRUE then
@@ -254,10 +258,10 @@ par/and do
 with
 
 	loop do
-
+		
 		emit REQ_TEMP;
 
-		var ulong value = await TEMP;
+		var ushort value = await TEMP;
 		var ubyte trig = FALSE;
 		var ubyte minMaxType;
 
@@ -270,6 +274,7 @@ with
 		end
 
 		if trig == TRUE then
+			emit LED0(ON);
 			sendMessage.type = TYPE(SOURCE,minMaxType);
         	sendMessage.hops = 1; 
         	var ubyte index = (random() % nNeighbours);
@@ -280,39 +285,39 @@ with
 			table_source.neighbour[minMaxType] = nodeId;
 			sourceFlag[minMaxType] = TRUE;
         	emit SEND(sendMessage);
+			await SEND_DONE;
 			await 50s;
 		else
 			await 100ms;
 		end
 
-	end
-with
-	loop do
 		emit REQ_PHOTO;
 
-		var ulong photo = await PHOTO;
-		var ubyte trig = FALSE;
-		var ubyte minMaxType;
+		value = await PHOTO;
+		trig = FALSE;
 
-		if photo > 450 then		
+		if value > 450 then		
 			minMaxType = MAX;
 			trig = TRUE;
-		else/if photo < 350 then
+		else/if value < 350 then
 			minMaxType = MIN;
 			trig = TRUE;
 		end
 
 		if trig == TRUE then
+			emit LED1(ON);
 			selfInterestFlag[minMaxType] = TRUE;
 			sendMessage.type = TYPE(INTEREST,minMaxType);
         	sendMessage.hops = 1; 
         	var ubyte index = (random() % nNeighbours);
         	sendMessage.target = neighbours[index];
         	emit SEND(sendMessage);
+			await SEND_DONE;
 			await 50s;
 		else
 			await 100ms;
 		end
+
 	end
 end
 
