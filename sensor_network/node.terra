@@ -1,4 +1,8 @@
 #include "/home/terra/TerraNG/terra/TerraNet.defs"
+
+#define N_NODES 8
+#define MAX_HOPS 4
+
 // 5 types of messages:
     // NEIGHBOURS package with nodeId to be used in INITIALIZATION ROUTINE
     
@@ -10,19 +14,6 @@
 
     // REQUEST - requests an event information
 
-// 3 "tables"
-    // NEIGHBOURS - nodeId of each neighbour (received in INITIALIZATION ROUTINE)
-    // EVENT - nodeId of neighbours that broadcasted event source notification.
-    // INTEREST - nodeId of neighbours that broadcasted interest in an event..
-// EVENT and INTEREST might not need to be tables since the number of events is small
-// and thus can be separate variables (EVENT_ORIGIN_XX and INTEREST_ORIGIN_XX where
-// XX can be LT for low temp and HT for high temp). In case optimzation is done (shortest
-// path) then theres also need for a third and fourth type of variable "N_JUMPS_ORIGIN_XX"
-// and N_JUMPS_INTEREST_XX which keeps track of the number of jumps till origin associated
-// with the neighbour in EVENT_ORIGIN_XX and INTEREST_ORIGIN_XX.
-
-#define N_NODES 8
-#define MAX_HOPS 4
 
 var ushort nodeId = getNodeId();
 
@@ -38,7 +29,7 @@ var ushort nodeId = getNodeId();
 #define INFO 3
 #define REQUEST 4
 
-//Types are build as 2^(TYPE) + (MIN/MAX)
+//Types are build as 2*(TYPE) + (MIN/MAX)
 // So SOURCE_MIN = 2 SOURCE_MAX = 3 INFO_MIN = 4 INFO_MAX = 5 etc
 
 #define TYPE(X,Y) ((X * 2) + Y)
@@ -46,7 +37,6 @@ var ushort nodeId = getNodeId();
 #define GET_MIN_MAX(X) (X % 2)
 
 
-// Is this enough to support the messages passed in?
 pktype eventMsg from radioMsg with
 	var ulong  hops;
     var ubyte  origin;
@@ -159,13 +149,14 @@ par/and do
         interest.type = min_max;
         interest.source = message.source;
 
-        // emit LEDS(type_raw);
         if type == SOURCE then
             if sourceFlag[min_max] == 0 then
+            //iF SOURCE DOESN'T EXIST, SETS IT
                 sourceFlag[min_max] = 1;
                 table_source.hops[min_max] = message.hops;
                 table_source.neighbour[min_max] = message.source;
             else
+            //iF SOURCE ALREADY EXIST, CHECK NUMBER OF HOPS
                 if table_source.hops[min_max] > message.hops then
                     table_source.hops[min_max] = message.hops;
                     table_source.neighbour[min_max] = message.source;
@@ -177,53 +168,46 @@ par/and do
 			interestFlag[min_max] = TRUE;
 
 		else/if type == REQUEST then
-			//emit LED0(ON);
-			// colocar na queue
+
+            emit LED1(ON);
+
+			// PUTS INTEREST ON QUEUE
 			qPut(interest);
-			// repassar
+
 			if waitingForInfo[min_max] == FALSE then
 				waitingForInfo[min_max] = TRUE;
 			else
 				send = FALSE;
 			end
 			if hasTemp[min_max] then
-				// tem informacao, deve gerar informacao
-				
-				emit LEDS(OFF);
-				emit LEDS(6);
-
+				// ALREADY HAS INFO, GENERATES INFO MESSAGE
 				sendMessage.type = TYPE(INFO,min_max);
 				sendMessage.hops = 1;
 				sendMessage.temp = temp[min_max];
 				send = TRUE;
-				//await FOREVER;
 			end
 		else/if type == INFO then
-			emit LEDS(OFF);			
-			emit LEDS(3);
-			//await FOREVER;
+
+            emit LED2(0);
 
 			sendMessage.temp = message.temp;
-			//if nodeId == 33 and message.temp == 10 then
-			//	emit LEDS(7);
-			//	await FOREVER;
-			//end
 
-			if selfInterestFlag[min_max] then // informação chegou no nó de origem da busca
-				emit LEDS(7);
+			if selfInterestFlag[min_max] then 
+                // INFORMATION ARRIVED TO ORIGIN OF INTEREST
+				emit LED3(ON);
 				await FOREVER;
 			end
+
 			loop i,qSize() do
-				emit LEDS(1);
 				qGet(interest);
 
 				if interest.type == min_max then
-				// Se o interesse e a info forem do mesmo tipo, repassa a info
+				// IF INTEREST AND INFO ARE OF THE SAME TIPE FORWARD INFO
 					sendMessage.target = interest.source;
 
 					emit SEND(sendMessage);
 				else
-				// se forem de tipos diferentes, coloca o interesse na fila novamente
+				// IF TYPES ARE DIFFERENT PUT INTEREST BACK TO QUEUE
 					qPut(interest);
 				end
 				interestFlag[min_max] = FALSE;
@@ -233,16 +217,16 @@ par/and do
 			send = FALSE;
         end        
 		if message.hops >= MAX_HOPS then
+            // IF HOPS EXCEED LIMIT, MESSAGE ISN'T FORWARDED
             send = FALSE;
         end
 		if send == TRUE then
-			emit LEDS(5);
             emit SEND(sendMessage);
         end
 
 		if waitingForInfo[min_max] == FALSE and sourceFlag[min_max] == TRUE and interestFlag[min_max] == TRUE then
-			// dispara request
-			emit LEDS(7);
+			// HAS SOURCE AND INTEREST OF SMAE TYPE, TRIGGER REQUEST
+			emit LED1(ON);
 			sendMessage.type = TYPE(REQUEST,min_max);
 			sendMessage.target = table_source.neighbour[min_max];
 			sendMessage.hops = 1;
@@ -273,44 +257,44 @@ with
 		end
 
 		if trig == TRUE then
-			emit LED0(ON);
-			sendMessage.type = TYPE(SOURCE,minMaxType);
-        	sendMessage.hops = 1; 
-        	var ushort index = (random() % nNeighbours);
-        	sendMessage.target = neighbours[index];
-			hasTemp[minMaxType] = TRUE;
-			temp[minMaxType] = value;
-			table_source.hops[minMaxType] = 0;
-			table_source.neighbour[minMaxType] = nodeId;
-			sourceFlag[minMaxType] = TRUE;
-        	emit SEND(sendMessage);
-			await SEND_DONE;
-		end
+            // TRIGGS SOURCE
+            sendMessage.type = TYPE(SOURCE,minMaxType);
+            sendMessage.hops = 1; 
+            var ushort index = (random() % nNeighbours);
+            sendMessage.target = neighbours[index];
+            hasTemp[minMaxType] = TRUE;
+            temp[minMaxType] = value;
+            table_source.hops[minMaxType] = 0;
+            table_source.neighbour[minMaxType] = nodeId;
+            sourceFlag[minMaxType] = TRUE;
+            emit SEND(sendMessage);
+            await SEND_DONE;
+        end
 
-		emit REQ_PHOTO;
+        emit REQ_PHOTO;
 
-		value = await PHOTO;
-		trig = FALSE;
+        value = await PHOTO;
+        trig = FALSE;
 
-		if value > 450 then		
-			minMaxType = MAX;
-			trig = TRUE;
-		else/if value < 350 then
-			minMaxType = MIN;
-			trig = TRUE;
-		end
+        if value > 450 then     
+            minMaxType = MAX;
+            trig = TRUE;
+        else/if value < 350 then
+            minMaxType = MIN;
+            trig = TRUE;
+        end
 
-		if trig == TRUE then
-			emit LED1(ON);
-			selfInterestFlag[minMaxType] = TRUE;
-			sendMessage.type = TYPE(INTEREST,minMaxType);
-        	sendMessage.hops = 1; 
-        	var ushort index = (random() % nNeighbours);
-        	sendMessage.target = neighbours[index];
-        	emit SEND(sendMessage);
-			await SEND_DONE;
-		end
+        if trig == TRUE then
+            // TRIGGS INTEREST
+            selfInterestFlag[minMaxType] = TRUE;
+            sendMessage.type = TYPE(INTEREST,minMaxType);
+            sendMessage.hops = 1; 
+            var ushort index = (random() % nNeighbours);
+            sendMessage.target = neighbours[index];
+            emit SEND(sendMessage);
+            await SEND_DONE;
+        end
 
-	end
+    end
 end
 
