@@ -181,7 +181,6 @@ par/and do
 			end
 			if hasTemp[min_max] then
 				// ALREADY HAS INFO, GENERATES INFO MESSAGE
-				
 				sendMessage.type = TYPE(INFO,min_max);
 				sendMessage.hops = 1;
 				sendMessage.temp = temp[min_max];
@@ -218,6 +217,7 @@ par/and do
 			send = FALSE;
         end        
 		if message.hops >= MAX_HOPS then
+            // IF HOPS EXCEED LIMIT, MESSAGE ISN'T FORWARDED
             send = FALSE;
         end
 		if send == TRUE then
@@ -225,7 +225,7 @@ par/and do
         end
 
 		if waitingForInfo[min_max] == FALSE and sourceFlag[min_max] == TRUE and interestFlag[min_max] == TRUE then
-			// TRIGGER REQUEST
+			// HAS SOURCE AND INTEREST OF SMAE TYPE, TRIGGER REQUEST
 			emit LED1(ON);
 			sendMessage.type = TYPE(REQUEST,min_max);
 			sendMessage.target = table_source.neighbour[min_max];
