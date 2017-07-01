@@ -45,6 +45,10 @@ interface {
                   type = "string"},
                 }
        }
+       hello = {
+        resulttype = "void"
+        args = {{direction = "in", type = "string"}}
+        }
 
   }
 }
