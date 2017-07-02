@@ -1,48 +1,106 @@
-WINDOW_WIDTH = 1000
-WINDOW_HEIGHT = 1000
+MQTT = require('mqtt_library')
+
+
+WINDOW_WIDTH = 700
+WINDOW_HEIGHT = 700
 
 TILE_SIZE = 10
 
-SPEED = 3
+SPEED = 7
 
 COLOR_GRAY = {255,255,255,100}
+
 COLOR_GREEN = {0,255,0,255}
 COLOR_GREEN_TAIL = {0,255,0,100}
+
+COLOR_BLUE = {0,0,255,255}
+COLOR_BLUE_TAIL = {0,0,255,100}
+
+COLOR_RED = {255,0,0,255}
+COLOR_RED_TAIL = {255,0,0,100}
+
+COLOR_WHITE = {255,255,255,255}
+COLOR_WHITE_TAIL = {255,255,255,100}
+
 COLOR_GREEN_TABLE = {head = COLOR_GREEN, tail = COLOR_GREEN_TAIL}
+COLOR_BLUE_TABLE = {head = COLOR_BLUE, tail = COLOR_BLUE_TAIL}
+COLOR_RED_TABLE = {head = COLOR_RED, tail = COLOR_RED_TAIL}
+COLOR_WHITE_TABLE = {head = COLOR_WHITE, tail = COLOR_WHITE_TAIL}
 
 blocked_tiles = {}
 
 i=0
-c = "press any key"
 count = 0
-function love.keypressed(keypressed)
-    c = keypressed
-    if keypressed == "escape" then
+
+
+function love.keypressed(keyPressed)
+    print("Key: " .. keyPressed)
+    if keyPressed == "escape" then
         love.window.close()
-    elseif keypressed == "right" or keypressed == "left" or keypressed == "up" or keypressed == "down" then
-        player.direction = keypressed
+    elseif(keyPressed == " ") then
+        mqttClient:publish("gameStart", myID)
+    elseif (keyPressed == "up" or keyPressed == "down" or keyPressed == "left" or keyPressed == "right") then
+        mqttClient:publish("directions", "{direction = " .. "'"..keyPressed.."'" .. ", player = " .. myPlayer .. "}")
     end
 
 end
+
+
 function love.load()
     love.window.setMode(WINDOW_WIDTH,WINDOW_HEIGHT,{resizable=false})
+
+    myPlayer = 1
+    totPlayers = 1
+    startedPlayers = 0
+    isGameStarted = false
+    speed = 100
+
+    initPlayers = {{20,20,"right",COLOR_RED_TABLE},{50,20,"down",COLOR_BLUE_TABLE},
+                    {50,50,"left",COLOR_GREEN_TABLE},{20,50,"up",COLOR_WHITE_TABLE}}
+
+    players = {}
+
+    mqttClient = MQTT.client.create("localhost", 1050, messageReceived)
+    myID = os.time() .. love.math.random(200)
+    mqttClient:connect(myID)
+    mqttClient:subscribe({"entered",myID,"gameStart","directions"})
+
+    mqttClient:publish("entered", myID)
 
     player = spawnPlayer(COLOR_GREEN_TABLE)
 end
 
 function love.update(dt)
-    if count > SPEED then
-        count = 0
-        player:move();
+    errorMessage = mqttClient:handler()
+    if(errorMessage ~= nil) then
+        print('Error: ' .. errorMessage)
     end
-    count = count + 1
+
+    if(isGameStarted) then
+        if count > SPEED then
+            count = 0
+            for _,player in ipairs(players) do
+                if(player.isDead == false) then
+                    player:move()
+                end
+            end
+        end
+        count = count + 1
+    end
 end
 
 function love.draw()
-    love.graphics.print(player.x.."|"..player.y,400,400)
-    drawGrid()
-    player:draw()
-    player:drawTail()
+    if(isGameStarted) then
+        drawGrid()
+        for i,player in ipairs(players) do
+            love.graphics.print(player.x.."|"..player.y,i*200,400)
+            player:draw()
+            player:drawTail()
+        end
+    else
+        love.graphics.print("Press space to start game", 200, 200)
+    end
+
 end
 
 function drawGrid()
@@ -55,12 +113,13 @@ function drawGrid()
     love.graphics.setColor(unpack(original_color))
 end
 
-function spawnPlayer(color_table)
+function spawnPlayer(x,y,direction,color_table)
     return {
-        x = 10,
-        y = 10,
+        x = x,
+        y = y,
         tail = {},
-        direction = "right",
+        direction = direction,
+        isDead = false,
         draw = function(table)
                 original_color = {love.graphics.getColor()}
                 love.graphics.setColor(unpack(color_table.head))
@@ -82,6 +141,7 @@ function spawnPlayer(color_table)
             end
             if collision(arg_table) == true then
                 print "COLLISION"
+                arg_table.isDead = true
                 arg_table.direction = "escape"
             end
         end,
@@ -98,7 +158,7 @@ end
 
 function insertBlockTile(x,y)
     if blocked_tiles[x] == nil then
-        print "1"
+        --print "1"
         blocked_tiles[x] = {}
     end
     blocked_tiles[x][y] = true;
@@ -106,12 +166,58 @@ end
 
 function collision(table)
     if blocked_tiles[table.x] == nil then
-        print "2"
+        --print "2"
         return false
     end
     if blocked_tiles[table.x][table.y] == true then
-        print "3"
+        --print "3"
+        return true
+    end
+    print('TABLE X'.. table.x)
+    print('TABLE X TILE SIZE: '.. table.x * TILE_SIZE )
+    print('WINDOW_WIDTH: '.. WINDOW_WIDTH )
+    if table.x * TILE_SIZE > WINDOW_WIDTH or table.y *TILE_SIZE > WINDOW_HEIGHT or table.x *TILE_SIZE < 0 or table.y *TILE_SIZE < 0 then
+        print('OUCH! HIT THE WALL :/')
         return true
     end
     return false
+end
+
+function messageReceived(topic, message)
+    print("Received: " .. topic .. ": " .. message)
+    
+
+    if(topic == "entered") then
+
+        if(message ~= myID) then
+            mqttClient:publish(message, "ack")
+            totPlayers = totPlayers + 1
+            print("Total Players: " .. totPlayers)
+        end
+
+        player = spawnPlayer(unpack(initPlayers[totPlayers]))
+        table.insert(players,player)
+
+    elseif (topic == myID) then
+
+        totPlayers = totPlayers + 1
+        myPlayer = myPlayer + 1
+
+        table.insert(players,spawnPlayer(unpack(initPlayers[totPlayers])))
+        print("Total Players: " .. totPlayers)
+
+    elseif (topic == "gameStart") then
+
+        print("Total Players: " .. totPlayers .. " Me: " .. myPlayer)
+
+        startedPlayers = startedPlayers + 1
+        if(startedPlayers == totPlayers) then
+            isGameStarted = true
+        end
+
+    elseif (topic == "directions") then
+        info = loadstring('return'..message)()
+        print("Player: " .. info.player .. "Direction: " .. info.direction)
+        players[info.player].direction = info.direction
+    end
 end
