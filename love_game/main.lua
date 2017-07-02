@@ -38,7 +38,7 @@ function love.keypressed(keyPressed)
     if keyPressed == "escape" then
         love.window.close()
     elseif(keyPressed == " ") then
-        mqttClient:publish("gameStart", myID)
+        mqttClient:publish("gameStart", myPlayer)
     elseif (keyPressed == "up" or keyPressed == "down" or keyPressed == "left" or keyPressed == "right") then
         mqttClient:publish("directions", "{direction = " .. "'"..keyPressed.."'" .. ", player = " .. myPlayer .. "}")
     end
@@ -51,8 +51,10 @@ function love.load()
 
     myPlayer = 1
     totPlayers = 1
-    startedPlayers = 0
+    startedPlayersCount = 0
+    startedPlayers = {false,false,false,false}
     isGameStarted = false
+    myPlayerStarted = false
     speed = 100
 
     initPlayers = {{20,20,"right",COLOR_RED_TABLE},{50,20,"down",COLOR_BLUE_TABLE},
@@ -97,6 +99,13 @@ function love.draw()
             player:draw()
             player:drawTail()
         end
+    elseif(myPlayerStarted)then
+        for i,player in ipairs(players) do
+            if(startedPlayers[i]) then
+                player:draw()
+            end
+        end
+
     else
         love.graphics.print("Press space to start game", 200, 200)
     end
@@ -173,9 +182,9 @@ function collision(table)
         --print "3"
         return true
     end
-    print('TABLE X'.. table.x)
-    print('TABLE X TILE SIZE: '.. table.x * TILE_SIZE )
-    print('WINDOW_WIDTH: '.. WINDOW_WIDTH )
+    -- print('TABLE X'.. table.x)
+    -- print('TABLE X TILE SIZE: '.. table.x * TILE_SIZE )
+    -- print('WINDOW_WIDTH: '.. WINDOW_WIDTH )
     if table.x * TILE_SIZE > WINDOW_WIDTH or table.y *TILE_SIZE > WINDOW_HEIGHT or table.x *TILE_SIZE < 0 or table.y *TILE_SIZE < 0 then
         print('OUCH! HIT THE WALL :/')
         return true
@@ -190,7 +199,7 @@ function messageReceived(topic, message)
     if(topic == "entered") then
 
         if(message ~= myID) then
-            mqttClient:publish(message, "ack")
+            mqttClient:publish(message, "{player = " .. myPlayer .. ", hasStarted = " .. tostring(myPlayerStarted) .."}")
             totPlayers = totPlayers + 1
             print("Total Players: " .. totPlayers)
         end
@@ -203,15 +212,30 @@ function messageReceived(topic, message)
         totPlayers = totPlayers + 1
         myPlayer = myPlayer + 1
 
+        info = loadstring('return'..message)()
+
         table.insert(players,spawnPlayer(unpack(initPlayers[totPlayers])))
+
+        if(info.hasStarted) then
+            startedPlayers[info.player] = true
+            startedPlayersCount = startedPlayersCount + 1
+        end
         print("Total Players: " .. totPlayers)
 
     elseif (topic == "gameStart") then
 
-        print("Total Players: " .. totPlayers .. " Me: " .. myPlayer)
 
-        startedPlayers = startedPlayers + 1
-        if(startedPlayers == totPlayers) then
+        startedPlayersCount = startedPlayersCount + 1
+        print("Total Players: " .. totPlayers .. " Started Players Count: " .. startedPlayersCount)
+
+        playerNumber = tonumber(message)
+        if(playerNumber == myPlayer) then
+            myPlayerStarted = true
+        end
+
+        startedPlayers[playerNumber] = true
+
+        if(startedPlayersCount == totPlayers) then
             isGameStarted = true
         end
 
