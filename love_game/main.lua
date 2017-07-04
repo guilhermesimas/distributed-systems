@@ -1,8 +1,10 @@
 MQTT = require('mqtt_library')
 
 
-WINDOW_WIDTH = 700
-WINDOW_HEIGHT = 700
+-- WINDOW_WIDTH = 700
+-- WINDOW_HEIGHT = 700
+
+N_TILES = 70
 
 TILE_SIZE = 10
 
@@ -37,7 +39,7 @@ function love.keypressed(keyPressed)
     print("Key: " .. keyPressed)
     if keyPressed == "escape" then
         love.window.close()
-    elseif(keyPressed == " ") then
+    elseif(keyPressed == "space") then
         mqttClient:publish("gameStart", myPlayer)
     elseif (keyPressed == "up" or keyPressed == "down" or keyPressed == "left" or keyPressed == "right") then
         mqttClient:publish("directions", "{direction = " .. "'"..keyPressed.."'" .. ", player = " .. myPlayer .. "}")
@@ -47,7 +49,7 @@ end
 
 
 function love.load()
-    love.window.setMode(WINDOW_WIDTH,WINDOW_HEIGHT,{resizable=false})
+    love.window.setMode(TILE_SIZE * N_TILES , TILE_SIZE * N_TILES,{resizable=false})
 
     myPlayer = 1
     totPlayers = 1
@@ -115,9 +117,9 @@ end
 function drawGrid()
     original_color = {love.graphics.getColor()}
     love.graphics.setColor(unpack(COLOR_GRAY))
-    for i=0,WINDOW_WIDTH,TILE_SIZE do
-        love.graphics.line(i,0,i,WINDOW_HEIGHT)
-        love.graphics.line(0,i,WINDOW_WIDTH,i)
+    for i=0,N_TILES,1 do
+        love.graphics.line(i * TILE_SIZE, 0 ,i * TILE_SIZE , N_TILES * TILE_SIZE)
+        love.graphics.line(0,i * TILE_SIZE , N_TILES * TILE_SIZE , i * TILE_SIZE)
     end
     love.graphics.setColor(unpack(original_color))
 end
@@ -174,6 +176,11 @@ function insertBlockTile(x,y)
 end
 
 function collision(table)
+    if (table.x >= N_TILES) or (table.y >= N_TILES ) or (table.x < 0) or (table.y) < 0 then
+        -- print('OUCH! HIT THE WALL :/')
+        -- print(table.x .."|"..N_TILES.."||".. table.y  .. "|")  
+        return true
+    end
     if blocked_tiles[table.x] == nil then
         --print "2"
         return false
@@ -185,10 +192,6 @@ function collision(table)
     -- print('TABLE X'.. table.x)
     -- print('TABLE X TILE SIZE: '.. table.x * TILE_SIZE )
     -- print('WINDOW_WIDTH: '.. WINDOW_WIDTH )
-    if table.x * TILE_SIZE > WINDOW_WIDTH or table.y *TILE_SIZE > WINDOW_HEIGHT or table.x *TILE_SIZE < 0 or table.y *TILE_SIZE < 0 then
-        print('OUCH! HIT THE WALL :/')
-        return true
-    end
     return false
 end
 
