@@ -166,7 +166,7 @@ function spawnPlayer(x,y,direction,color_table)
                 print "COLLISION"
                 arg_table.isDead = true
                 deadPlayers = deadPlayers + 1
-                if(deadPlayers == totPlayers-1) then
+                if(deadPlayers >= totPlayers-1) then
                     print("set game over ")
                     gameOver = true
                 end
