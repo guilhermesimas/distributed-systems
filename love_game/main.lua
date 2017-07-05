@@ -39,7 +39,7 @@ function love.keypressed(keyPressed)
     print("Key: " .. keyPressed)
     if keyPressed == "escape" then
         love.window.close()
-    elseif(keyPressed == "space") then
+    elseif(keyPressed == "space" or keyPressed == " ") then
         mqttClient:publish("gameStart", myPlayer)
     elseif (keyPressed == "up" or keyPressed == "down" or keyPressed == "left" or keyPressed == "right") then
         mqttClient:publish("directions", "{direction = " .. "'"..keyPressed.."'" .. ", player = " .. myPlayer .. "}")
@@ -56,8 +56,10 @@ function love.load()
     startedPlayersCount = 0
     startedPlayers = {false,false,false,false}
     isGameStarted = false
-    myPlayerStarted = false
     speed = 100
+
+    deadPlayers = 0
+    gameOver = false
 
     initPlayers = {{20,20,"right",COLOR_RED_TABLE},{50,20,"down",COLOR_BLUE_TABLE},
                     {50,50,"left",COLOR_GREEN_TABLE},{20,50,"up",COLOR_WHITE_TABLE}}
@@ -75,33 +77,43 @@ function love.load()
 end
 
 function love.update(dt)
+
     errorMessage = mqttClient:handler()
     if(errorMessage ~= nil) then
         print('Error: ' .. errorMessage)
     end
 
     if(isGameStarted) then
-        if count > SPEED then
-            count = 0
-            for _,player in ipairs(players) do
-                if(player.isDead == false) then
-                    player:move()
+        if(not gameOver) then
+            if count > SPEED then
+                count = 0
+                for _,player in ipairs(players) do
+                    if(player.isDead == false) then
+                        player:move()
+                    end
                 end
             end
+            count = count + 1
         end
-        count = count + 1
     end
 end
 
 function love.draw()
+
+    if(gameOver and (not players[myPlayer].isDead)) then
+        love.graphics.print("You Win! :)",200, 200)
+    elseif (gameOver) then
+        love.graphics.print("You Lost :/",200, 200)
+    end
+
     if(isGameStarted) then
-        drawGrid()
+        --sdrawGrid()
         for i,player in ipairs(players) do
             love.graphics.print(player.x.."|"..player.y,i*200,400)
             player:draw()
             player:drawTail()
         end
-    elseif(myPlayerStarted)then
+    elseif(startedPlayers[myPlayer])then
         for i,player in ipairs(players) do
             if(startedPlayers[i]) then
                 player:draw()
@@ -153,6 +165,11 @@ function spawnPlayer(x,y,direction,color_table)
             if collision(arg_table) == true then
                 print "COLLISION"
                 arg_table.isDead = true
+                deadPlayers = deadPlayers + 1
+                if(deadPlayers == totPlayers-1) then
+                    print("set game over ")
+                    gameOver = true
+                end
                 arg_table.direction = "escape"
             end
         end,
@@ -169,7 +186,6 @@ end
 
 function insertBlockTile(x,y)
     if blocked_tiles[x] == nil then
-        --print "1"
         blocked_tiles[x] = {}
     end
     blocked_tiles[x][y] = true;
@@ -177,21 +193,14 @@ end
 
 function collision(table)
     if (table.x >= N_TILES) or (table.y >= N_TILES ) or (table.x < 0) or (table.y) < 0 then
-        -- print('OUCH! HIT THE WALL :/')
-        -- print(table.x .."|"..N_TILES.."||".. table.y  .. "|")  
         return true
     end
     if blocked_tiles[table.x] == nil then
-        --print "2"
         return false
     end
     if blocked_tiles[table.x][table.y] == true then
-        --print "3"
         return true
     end
-    -- print('TABLE X'.. table.x)
-    -- print('TABLE X TILE SIZE: '.. table.x * TILE_SIZE )
-    -- print('WINDOW_WIDTH: '.. WINDOW_WIDTH )
     return false
 end
 
@@ -232,10 +241,6 @@ function messageReceived(topic, message)
         print("Total Players: " .. totPlayers .. " Started Players Count: " .. startedPlayersCount)
 
         playerNumber = tonumber(message)
-        if(playerNumber == myPlayer) then
-            myPlayerStarted = true
-        end
-
         startedPlayers[playerNumber] = true
 
         if(startedPlayersCount == totPlayers) then
