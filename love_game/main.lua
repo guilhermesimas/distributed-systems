@@ -4,11 +4,11 @@ MQTT = require('mqtt_library')
 -- WINDOW_WIDTH = 700
 -- WINDOW_HEIGHT = 700
 
-N_TILES = 70
+N_TILES = 100
 
 TILE_SIZE = 10
 
-SPEED = 7
+SPEED = 1
 
 COLOR_GRAY = {255,255,255,100}
 
@@ -61,8 +61,8 @@ function love.load()
     deadPlayers = 0
     gameOver = false
 
-    initPlayers = {{20,20,"right",COLOR_RED_TABLE},{50,20,"down",COLOR_BLUE_TABLE},
-                    {50,50,"left",COLOR_GREEN_TABLE},{20,50,"up",COLOR_WHITE_TABLE}}
+    initPlayers = {{20,20,"right",COLOR_RED_TABLE},{N_TILES - 20,20,"down",COLOR_BLUE_TABLE},
+                    {N_TILES - 20,N_TILES - 20,"left",COLOR_GREEN_TABLE},{20,N_TILES - 20,"up",COLOR_WHITE_TABLE}}
 
     players = {}
 
@@ -101,15 +101,15 @@ end
 function love.draw()
 
     if(gameOver and (not players[myPlayer].isDead)) then
-        love.graphics.print("You Win! :)",200, 200)
+        love.graphics.print("You Win! :)",(TILE_SIZE * N_TILES / 2) - 175, (TILE_SIZE * N_TILES / 2) - 50, 0 , 5, 5)
     elseif (gameOver) then
-        love.graphics.print("You Lost :/",200, 200)
+        love.graphics.print("You Lost :/",(TILE_SIZE * N_TILES / 2) - 175, (TILE_SIZE * N_TILES / 2) - 50, 0 , 5, 5)
     end
 
     if(isGameStarted) then
         --sdrawGrid()
         for i,player in ipairs(players) do
-            love.graphics.print(player.x.."|"..player.y,i*200,400)
+            -- love.graphics.print(player.x.."|"..player.y,i*200,400)
             player:draw()
             player:drawTail()
         end
@@ -121,7 +121,7 @@ function love.draw()
         end
 
     else
-        love.graphics.print("Press space to start game", 200, 200)
+        love.graphics.print("Press space to start game", (TILE_SIZE * N_TILES / 2) - 225, (TILE_SIZE * N_TILES / 2) - 20, 0, 2.5)
     end
 
 end
@@ -250,6 +250,15 @@ function messageReceived(topic, message)
     elseif (topic == "directions") then
         info = loadstring('return'..message)()
         print("Player: " .. info.player .. "Direction: " .. info.direction)
-        players[info.player].direction = info.direction
+        if players[info.player].direction == "left" or players[info.player].direction == "right" then
+            if not(info.direction == "left" or info.direction == "right") then
+                players[info.player].direction = info.direction
+            end
+        end
+        if players[info.player].direction == "up" or players[info.player].direction == "down" then
+            if not(info.direction == "up" or info.direction == "down") then
+                players[info.player].direction = info.direction
+            end
+        end
     end
 end
